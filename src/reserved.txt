@@ -1,0 +1,8 @@
+ <!--<visibleWhen
+                     checkEnabled="false">
+		       <with variable="selection">
+		          <instanceof value="org.eclipse.jface.text.ITextSelection"/>
+		          <instanceof value="org.eclipse.jface.text.IStructuredSelection"/>
+		          <instanceof value="org.eclipse.jface.viewers.TreeSelection"/>
+		       </with>
+    		   </visibleWhen>-->

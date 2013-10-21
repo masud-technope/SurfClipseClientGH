@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         point="org.eclipse.ui.views">
+      <category
+            name="SurfClipse"
+            id="ca.usask.ca.srlab.surfclipse.client">
+      </category>
+      <view
+            name="SurfClipse"
+            icon="icons/sclogo4.png"
+            category="ca.usask.ca.srlab.surfclipse.client"
+            class="ca.usask.ca.srlab.surfclipse.client.views.SurfClipseClientView"
+            id="ca.usask.ca.srlab.surfclipse.client.views.SurfClipseClientView">
+      </view>
+      <view
+            name="SurfClipse Browser"
+            icon="icons/browser16.png"
+            category="ca.usask.ca.srlab.surfclipse.client"
+            class="ca.usask.ca.srlab.surfclipse.client.views.SurfClipseBrowser"
+            id="ca.usask.ca.srlab.surfclipse.client.views.SurfClipseBrowser">
+      </view>
+   </extension>
+   
+   <extension point="org.eclipse.ui.commands">
+         <category
+               id="ca.usask.ca.srlab.surfclipse.client.category"
+               description="This is a category for command"
+               name="commandcategory">
+         </category>
+         <command
+               categoryId="ca.usask.ca.srlab.surfclipse.client.category"
+               defaultHandler="ca.usask.ca.srlab.surfclipse.client.handlers.SurfClipseHandler"
+               id="ca.usask.ca.srlab.surfclipse.client.SurfClipseClient"
+               name="Search Solutions">
+         </command>
+          <command
+         		categoryId="ca.usask.ca.srlab.surfclipse.client.category"
+         		defaultHandler="ca.usask.ca.srlab.surfclipse.client.handlers.ShowSurfClipseHandler"
+         		id="ca.usask.ca.srlab.surfclipse.client.ShowSurfClipse"
+         		name="Enable SurfClipse">
+         </command>
+         <command
+         		categoryId="ca.usask.ca.srlab.surfclipse.client.category"
+         		defaultHandler="ca.usask.ca.srlab.surfclipse.client.handlers.EnableModeHandler"
+         		id="ca.usask.ca.srlab.surfclipse.client.EnableProactive"
+         		name="Proactive">
+         </command>
+         <command
+         		categoryId="ca.usask.ca.srlab.surfclipse.client.category"
+         		defaultHandler="ca.usask.ca.srlab.surfclipse.client.handlers.EnableModeHandler"
+         		id="ca.usask.ca.srlab.surfclipse.client.EnableInteractive"
+         		name="Interactive">
+         </command>
+   </extension>
+   
+   <extension point="org.eclipse.ui.menus">
+         <menuContribution   
+               allPopups="false"
+               locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+               <menu label="SurfClipse" icon="icons/sclogo4.png" id="ca.usask.ca.srlab.surfclipse.client.popupmenu">
+               <command commandId="ca.usask.ca.srlab.surfclipse.client.ShowSurfClipse"
+                     id="ca.usask.ca.srlab.surfClipse.client.ShowSurfClipseMenu"
+                     label="Enable SurfClipse"
+                     icon="icons/enablesc16.png"
+                     style="push">
+               </command>
+               <command commandId="ca.usask.ca.srlab.surfclipse.client.EnableProactive"
+                     id="ca.usask.ca.srlab.surfClipse.client.EnableProactiveMenu"
+                     label="Choose Proactive Mode"
+                     icon="icons/pro16.png"
+                     style="push">
+               </command>
+                <command commandId="ca.usask.ca.srlab.surfclipse.client.EnableInteractive"
+                     id="ca.usask.ca.srlab.surfClipse.client.EnableInteractiveMenu"
+                     label="Choose Interactive Mode"
+                     icon="icons/inter16.png"
+                     style="push">
+               </command>
+               <command
+                     commandId="ca.usask.ca.srlab.surfclipse.client.SurfClipseClient"
+                     id="ca.usask.ca.srlab.surfClipse.client.SurfClipseMenu"
+                     label="Search Solutions"
+                     icon="icons/search16.png"
+                     style="push">
+               </command>
+            </menu>
+         </menuContribution>
+         <menuContribution 
+         locationURI="menu:org.eclipse.ui.main.menu?after=additions">
+               <menu label="SurfClipse" id="ca.usask.ca.srlab.surfclipse.client.mainmenu">
+               <command commandId="ca.usask.ca.srlab.surfclipse.client.ShowSurfClipse"
+                     id="ca.usask.ca.srlab.surfClipse.client.ShowSurfClipseMenu"
+                     label="Enable SurfClipse"
+                     icon="icons/enablesc16.png"
+                     style="push">
+               </command>
+               <command commandId="ca.usask.ca.srlab.surfclipse.client.EnableProactive"
+                     id="ca.usask.ca.srlab.surfClipse.client.EnableProactiveMenu"
+                     label="Choose Proactive Mode"
+                     icon="icons/pro16.png"
+                     style="push">
+               </command>
+                <command commandId="ca.usask.ca.srlab.surfclipse.client.EnableInteractive"
+                     id="ca.usask.ca.srlab.surfClipse.client.EnableInteractiveMenu"
+                     label="Choose Interactive Mode"
+                     icon="icons/inter16.png"
+                     style="push">
+               </command>
+               </menu>
+         </menuContribution> 
+   </extension>
+   
+   <extension point="org.eclipse.ui.handlers">
+      <handler
+      commandId="ca.usask.ca.srlab.surfclipse.client.SurfClipseClient">
+      </handler>
+      <handler 
+      commandId="ca.usask.ca.srlab.surfclipse.client.ShowSurfClipse">
+      </handler>
+      <handler commandId="ca.usask.ca.srlab.surfclipse.client.EnableProactive">
+      </handler>
+      <handler
+            commandId="ca.usask.ca.srlab.surfclipse.client.EnableInteractive">
+      </handler>
+     </extension>
+   <extension
+         point="org.eclipse.ui.perspectiveExtensions">
+      <perspectiveExtension
+            targetID="org.eclipse.jdt.ui.JavaPerspective">
+         <view
+               ratio="0.5"
+               relative="org.eclipse.ui.views.TaskList"
+               relationship="right"
+               id="ca.usask.ca.srlab.surfclipse.client.views.SurfClipseClientView">
+         </view>
+      </perspectiveExtension>
+   </extension>
+   <extension
+         point="org.eclipse.help.contexts">
+      <contexts
+            file="contexts.xml">
+      </contexts>
+   </extension>
+
+</plugin>
