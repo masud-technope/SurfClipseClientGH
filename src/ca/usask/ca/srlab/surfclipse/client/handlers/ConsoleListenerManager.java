@@ -51,11 +51,8 @@ public class ConsoleListenerManager {
 					mconsole = (MessageConsole) console;
 				}
 			}
-			
 			//now we have got two consoles. Now we can exchange their output
 			//MessageConsoleStream mstream=tconsole.
-			
-
 			System.out.println(mconsole.getName());
 			System.out.println(myconsole.getName());
 		}

@@ -10,6 +10,7 @@ public class ViewContentProvider implements IStructuredContentProvider {
 	String searchQuery;
 	String stacktrace;
 	String sourcecode_context;
+	Result[] displayableResults;
 	public int total_results_returned;
 	
 	public ViewContentProvider(String searchQuery, String stacktrace, String codeContext)
@@ -20,6 +21,12 @@ public class ViewContentProvider implements IStructuredContentProvider {
 		this.sourcecode_context=codeContext;
 	}
 	
+	public ViewContentProvider(Result[] results)
+	{
+		this.displayableResults=results;
+	}
+	
+	
 	public void inputChanged(Viewer v, Object oldInput, Object newInput) {
 	}
 	public void dispose() {
@@ -28,7 +35,7 @@ public class ViewContentProvider implements IStructuredContentProvider {
 		
 		//populating the results
 		//SearchResultProvider provider=new SearchResultProvider(searchQuery, stacktrace, sourcecode_context);
-		System.out.println("Client accessing web service ....");
+		/*System.out.println("Client accessing web service ....");
 		MyClient client=new MyClient(searchQuery, stacktrace, sourcecode_context);
 		
 		ArrayList<Result> finalResults=client.collect_search_results();
@@ -37,13 +44,12 @@ public class ViewContentProvider implements IStructuredContentProvider {
 		Result[] myresults=new Result[result_size];
 		total_results_returned=myresults.length;
 		int counter=0;
-		
 		//showing all results
-		/*for(Object obj:finalResults)
+		for(Object obj:finalResults)
 		{
 			Result result=(Result)obj;
 			myresults[counter++]=result;
-		}*/
+		}
 		//showing top 20 results
 		for(int i=0;i<20;i++)
 		{
@@ -52,6 +58,7 @@ public class ViewContentProvider implements IStructuredContentProvider {
 			myresults[counter++]=result;
 		}
 		
-		return myresults;
+		return myresults;*/
+		return this.displayableResults;
 	}
 }

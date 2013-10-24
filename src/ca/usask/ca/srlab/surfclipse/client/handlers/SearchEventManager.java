@@ -1,5 +1,6 @@
 package ca.usask.ca.srlab.surfclipse.client.handlers;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,6 +14,9 @@ import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -30,6 +34,8 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.internal.views.log.LogEntry;
 import org.eclipse.ui.texteditor.ITextEditor;
 
+import core.Result;
+
 import ca.usask.ca.srlab.surfclipse.client.views.SurfClipseClientView;
 
 public class SearchEventManager {
@@ -37,6 +43,7 @@ public class SearchEventManager {
 	String searchQuery;
 	String stacktrace;
 	String sourcecode_context;
+	Result[] collectedResults;
 	static int typeofSelection=-1; //0: from console, 1: from Error log or other view
 	int total_results_returned=0;
 	
@@ -72,11 +79,31 @@ public class SearchEventManager {
 		}
 	}
 	
+	public Result[] collect_search_results()
+	{
+		//System.out.println("Client accessing web service ....");
+		MyClient client=new MyClient(searchQuery, stacktrace, sourcecode_context);
+		ArrayList<Result> finalResults=client.collect_search_results();
+		System.out.println("Results returned:"+finalResults.size());
+		int total_result_size=finalResults.size();
+		int result_size=total_result_size<30?total_result_size:30; //finalResults.size()
+		Result[] myresults=new Result[result_size];
+		total_results_returned=myresults.length;
+		int counter=0;
+		//showing top 20 results
+		for(int i=0;i<result_size;i++)
+		{
+			Object obj=finalResults.get(i);
+			Result result=(Result)obj;
+			myresults[counter++]=result;
+		}
+		return myresults;
+	}
 	
 	public void fire_search_operation2() {
 		try {
 			// code for firing search operation
-			if (mode_of_invocation == 1) {
+			if (mode_of_invocation == 1) {  //pro active mode
 				
 				if (continue_search) {
 					this.stacktrace = currmatchedContent;
@@ -95,13 +122,13 @@ public class SearchEventManager {
 						this.sourcecode_context = "";
 					}
 				}else return;
-			} else if(mode_of_invocation==0) {
+			} else if(mode_of_invocation==0) {   //interactive mode
 
 				String selected_text = new String();
 				selected_text = get_selected_message_from_IDE();
 				if(selected_text.isEmpty() || selected_text==null)return;
 				else this.searchQuery=selected_text;
-				if (typeofSelection == 0) {
+				if (typeofSelection == 0) { //from console
 					try {
 						this.stacktrace = this.extract_stacktrace_from_console();
 						if (this.stacktrace == null)
@@ -116,7 +143,7 @@ public class SearchEventManager {
 					} catch (Exception exc) {
 						this.sourcecode_context = "";
 					}
-				} else if (typeofSelection == 1) {
+				} else if (typeofSelection == 1) { //from Error log
 					// selected text extracted
 					// stack trace extracted
 					// source code context not extracted
@@ -140,24 +167,28 @@ public class SearchEventManager {
 			{
 			if(!this.searchQuery.isEmpty())
 			{
-				
-				Display.getDefault().syncExec(new Runnable(){
-
-					@Override
-					public void run() {
-						// TODO Auto-generated method stub
-						try
-						{
-						final String viewID = "ca.usask.ca.srlab.surfclipse.client.views.SurfClipseClientView";
-						PlatformUI.getWorkbench().getActiveWorkbenchWindow()
-								.getActivePage().showView(viewID);
-						
-						update_surfclipse_view();
-						}catch(Exception exc){
-							exc.printStackTrace();
-						}
+				new Thread(){
+					public void run()
+					{
+						collectedResults=collect_search_results();
+						Display.getDefault().asyncExec(new Runnable(){
+							@Override
+							public void run() {
+								// TODO Auto-generated method stub
+								try
+								{
+								final String viewID = "ca.usask.ca.srlab.surfclipse.client.views.SurfClipseClientView";
+								PlatformUI.getWorkbench().getActiveWorkbenchWindow()
+										.getActivePage().showView(viewID);
+								
+								update_surfclipse_view();
+								}catch(Exception exc){
+									exc.printStackTrace();
+								}
+							}
+						});
 					}
-				});
+				}.start();
 			}
 			}catch(Exception exc){
 				System.err.println(exc.getMessage());
@@ -167,36 +198,59 @@ public class SearchEventManager {
 		}
 	}
 	
-	public void fire_keyword_search(String keywords) {
+	public void fire_keyword_search(String keywords, boolean associate_context) {
 		// variable assignment
 		this.searchQuery = keywords;
 		this.stacktrace = "";
 		this.sourcecode_context = "";
+		
+		if(associate_context){
+		//try to collect the context information
+		try {
+			this.stacktrace = this.extract_stacktrace_from_console();
+			if (this.stacktrace == null)
+				this.stacktrace = "";
+		} catch (Exception exc) {
+			this.stacktrace = "";
+		}
+		try {
+			this.sourcecode_context = this.extract_source_code_context(this.stacktrace);
+			if (this.sourcecode_context == null)
+				this.sourcecode_context = "";
+		} catch (Exception exc) {
+			this.sourcecode_context = "";
+		}}
+		
 		// performing the query
 		try {
 			if (!this.searchQuery.isEmpty()) {
-				Display.getDefault().syncExec(new Runnable() {
-					@Override
+
+				new Thread() {
 					public void run() {
-						// TODO Auto-generated method stub
-						try {
-							final String viewID = "ca.usask.ca.srlab.surfclipse.client.views.SurfClipseClientView";
-							PlatformUI.getWorkbench()
-									.getActiveWorkbenchWindow().getActivePage()
-									.showView(viewID);
-							
-							update_surfclipse_view();
-						} catch (Exception exc) {
-							exc.printStackTrace();
-						}
+						collectedResults = collect_search_results();
+						Display.getDefault().syncExec(new Runnable() {
+							@Override
+							public void run() {
+								// TODO Auto-generated method stub
+								try {
+									final String viewID = "ca.usask.ca.srlab.surfclipse.client.views.SurfClipseClientView";
+									PlatformUI.getWorkbench()
+											.getActiveWorkbenchWindow()
+											.getActivePage().showView(viewID);
+									update_surfclipse_view();
+								} catch (Exception exc) {
+									exc.printStackTrace();
+								}
+							}
+						});
 					}
-				});
+				}.start();
 			}
 		} catch (Exception exc) {
 			System.err.println(exc.getMessage());
 		}
 	}
-	
+
 	protected String extract_error_message_from_stack(String extractedStack)
 	{
 		//code for extracting the error message from stack
@@ -205,8 +259,8 @@ public class SearchEventManager {
 		errorMessage=stackElements[0];
 		return errorMessage;
 	}
-	
-	protected String extract_stacktrace_from_console()
+
+	public String extract_stacktrace_from_console()
 	{
 		//code for extracting stack from console
 		String extractedContent=new String();
@@ -231,7 +285,7 @@ public class SearchEventManager {
 		return extractedContent;
 	}
 	
-	protected String extract_source_code_context(String extractedStack)
+	public String extract_source_code_context(String extractedStack)
 	{
 		// code for extracting source code context
 		String sourceContext = new String();
@@ -376,7 +430,7 @@ public class SearchEventManager {
 			IViewPart vpart=page.findView(viewID);
 			SurfClipseClientView myview=(SurfClipseClientView)vpart;
 			//System.out.println(myview.viewer.toString());
-			ViewContentProvider viewContentProvider=new ViewContentProvider(searchQuery, stacktrace, sourcecode_context);
+			ViewContentProvider viewContentProvider=new ViewContentProvider(collectedResults);
 			myview.viewer.setContentProvider(viewContentProvider);
 			//myview.viewer.setSorter(new TableColumnSorter());
 			//myview.viewer.setInput(this.getvi);

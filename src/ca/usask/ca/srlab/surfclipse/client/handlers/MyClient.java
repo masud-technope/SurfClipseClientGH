@@ -4,9 +4,11 @@ import history.HistoryLink;
 import history.RecencyScoreManager;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 import org.eclipse.swt.widgets.Link;
 import org.json.simple.JSONArray;
@@ -104,9 +106,29 @@ public class MyClient {
 	protected ArrayList<Result> collect_search_results()
 	{
 		//code for collecting search results
-		String jsonResponse=perform_surfclipse_call();
+		//String jsonResponse=perform_surfclipse_call();
+		String jsonResponse=collect_demo_results();
 		return convert_json_to_results(jsonResponse);
 	}
+	
+	protected String collect_demo_results()
+	{
+		//code for collecting demo results
+		String jsonText=new String();
+		try
+		{
+		String surfclipse_dir=System.getProperty("user.home")+"/surfclipse";
+		String tempFile=surfclipse_dir+"/temp.txt";
+		Scanner scanner=new Scanner(new File(tempFile));
+		while(scanner.hasNext())
+		{
+			String line=scanner.nextLine();
+			jsonText+=line;
+		}
+		}catch(Exception exc){}
+		return jsonText;
+	}
+	
 	
 	protected String perform_surfclipse_call()
 	{
@@ -156,6 +178,7 @@ public class MyClient {
 			result.description=jsonObj.get("description").toString();
 			}catch (Exception e) {
 				// TODO: handle exception
+				result.description=" ";
 			}
 			result.resultURL=jsonObj.get("resultURL").toString();
 			System.out.println(jsonObj.get("resultURL").toString()+" "+jsonObj.get("totalscore").toString());

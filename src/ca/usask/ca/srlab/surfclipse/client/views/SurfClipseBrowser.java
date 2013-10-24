@@ -136,13 +136,13 @@ public class SurfClipseBrowser extends ViewPart {
 		
 		
 		Label address=new Label(composite, SWT.NONE);
-		address.setText("Page URL:");
-		address.setFont(new Font(composite.getDisplay(), "Arial",10, SWT.NORMAL));
+		address.setText("Address:");
+		address.setFont(new Font(composite.getDisplay(), "Arial",11, SWT.BOLD));
 		
-		final Text input=new Text(composite, SWT.FILL);
-		input.setToolTipText("Enter the page URL");
+		final Text input=new Text(composite, SWT.FILL |SWT.BORDER);
+		input.setToolTipText("Enter a page URL");
 		input.setLayoutData(gdata2);
-		input.setFont(new Font(composite.getDisplay(), "Arial",11, SWT.BOLD));
+		input.setFont(new Font(composite.getDisplay(), "Arial",11, SWT.NORMAL));
 		
 		
 		GridData gdata3=new GridData();
@@ -182,6 +182,7 @@ public class SurfClipseBrowser extends ViewPart {
 		try
 		{
 		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
+		//gridData.verticalIndent=5;
 		webbrowser=new Browser(parent, SWT.NONE);
 		webbrowser.setLayoutData(gridData);
 		webbrowser.addTitleListener(new TitleListener() {
@@ -238,7 +239,7 @@ public class SurfClipseBrowser extends ViewPart {
         //gridData = new GridData(SWT.DEFAULT, SWT.FILL, true, false);
         GridData gdata2=new GridData();
 		gdata2.heightHint=25;
-		gdata2.widthHint=600;
+		gdata2.widthHint=800;
 		gdata2.horizontalAlignment=SWT.CENTER;
 		gdata2.grabExcessHorizontalSpace=true;
 		
@@ -278,7 +279,7 @@ public class SurfClipseBrowser extends ViewPart {
 		//adding items
 		create_navigator_buttons(parent);
 		add_page_search_panel(parent);
-		add_browsed_page_info(parent);
+		//add_browsed_page_info(parent);
 		add_swt_browser(parent);
 	}
 	

@@ -6,6 +6,7 @@ import history.RecencyScoreManager;
 
 
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -16,24 +17,39 @@ import mode.SurfClipseModeManager;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.ToolTip;
 import org.eclipse.ui.part.*;
+import org.eclipse.jface.bindings.keys.KeyStroke;
+import org.eclipse.jface.fieldassist.ContentProposalAdapter;
+import org.eclipse.jface.fieldassist.SimpleContentProposalProvider;
+import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.browser.Browser;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.ui.*;
 import org.eclipse.swt.SWT;
+
+import querysuggest.SCQueryMaker;
 
 
 import ca.usask.ca.srlab.surfclipse.client.Activator;
@@ -73,9 +89,9 @@ public class SurfClipseClientView extends ViewPart {
 	//private Action action2;
 	//private Action doubleClickAction;
 	//array containing Tab URL
-	ArrayList<String> tabList=null;
 	Display display=null;
 	Shell shell=null;
+	ArrayList<String> suggestions=new ArrayList<>();
 
 	/*
 	 * The content provider class is responsible for
@@ -240,11 +256,11 @@ public class SurfClipseClientView extends ViewPart {
 	protected void add_related_exception_message(Composite parent,HashMap<String,ArrayList<Integer>> pointers)
 	{
 		// code for showing related exception message
-		Composite composite = new Composite(parent, SWT.NONE);
+		final Composite composite = new Composite(parent, SWT.NONE);
 		GridLayout gridLayout = new GridLayout(3, false);
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 10;
-		gridLayout.verticalSpacing = 10;
+		gridLayout.verticalSpacing = 5;
 		gridLayout.horizontalSpacing =5;
 		composite.setLayout(gridLayout);
 
@@ -256,25 +272,84 @@ public class SurfClipseClientView extends ViewPart {
 		gdata2.heightHint=25;
 		gdata2.widthHint=600;
 		gdata2.horizontalAlignment=SWT.BEGINNING;
+		gdata2.verticalAlignment=SWT.CENTER;
 		gdata2.grabExcessHorizontalSpace=false;
 		
-		Label keywordlabel=new Label(composite, SWT.NONE);
-		keywordlabel.setText("Your Keywords:");
-		keywordlabel.setFont(new Font(composite.getDisplay(), "Arial",10, SWT.NORMAL));
 		
-		final Text input=new Text(composite, SWT.FILL);
+		Label keywordlabel=new Label(composite, SWT.NONE);
+		//final Image image=ImageDescriptor.createFromFile(SurfClipseClientView.class, "sclogo4.png").createImage();
+		//keywordlabel.setImage(image);
+		keywordlabel.setText("Keywords:");
+		keywordlabel.setFont(new Font(composite.getDisplay(), "Arial",11, SWT.BOLD));
+		
+		
+		final Text input = new Text(composite, SWT.SINGLE | SWT.BORDER );
 		input.setEditable(true);
-		input.setToolTipText("Enter your search keywords");
-		Font myfont=new Font(composite.getDisplay(), "Arial",11, SWT.BOLD);
+		input.setToolTipText("Enter your search keywords. Press Ctrl+Space for suggestions");
+		Font myfont = new Font(composite.getDisplay(), "Arial", 11, SWT.NORMAL);
 		input.setFont(myfont);
-		input.setLayoutData(gdata2);		
+		input.setLayoutData(gdata2);
+		
+	    FocusListener flistener=new FocusListener() {
+			
+			@Override
+			public void focusLost(FocusEvent e) {
+				// TODO Auto-generated method stub
+				//do nothing
+				System.out.println("Focus lost");
+			}
+			
+			@Override
+			public void focusGained(FocusEvent e) {
+				// TODO Auto-generated method stub
+				System.out.println("Focus gained");
+				if(suggestions.size()==0)
+				{
+					try
+					{
+					SearchEventManager manager=new SearchEventManager();
+					String strace=manager.extract_stacktrace_from_console();
+					String ccontext=manager.extract_source_code_context(strace);
+					SCQueryMaker maker=new SCQueryMaker("", strace, ccontext);
+					suggestions=maker.getSearchQuerySuggestions();
+					
+					//now assign the auto completion feature
+					try {
+						//collecting context information
+						String[] proposals = suggestions.toArray(new String[suggestions.size()]);
+						if(proposals.length>0){
+						ContentProposalAdapter adapter = null;
+						SimpleContentProposalProvider scp = new SimpleContentProposalProvider(
+								proposals);
+						String keyPress = "Ctrl+Space";
+						KeyStroke ks = KeyStroke.getInstance(keyPress);
+						adapter = new ContentProposalAdapter(input,
+								new TextContentAdapter(), scp, ks, null);
+						adapter.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_INSERT);
+						}
+					} catch (Exception exc) {
+						exc.printStackTrace();
+					}
+					}catch(Exception exc){}
+					
+				}
+			}
+		};
+		
+		input.addFocusListener(flistener);
+		
+		
+		//final Button confirm; //=new Button(composite,SWT.CHECK);
+		//confirm.setText("Associate context");
+		//confirm.setLayoutData(gdata2);
+		
+		//Label blank=new Label(composite,SWT.NONE);
 		
 		GridData gdata3=new GridData();
 		gdata3.heightHint=30;
 		gdata3.widthHint=90;
 		gdata3.horizontalAlignment=SWT.BEGINNING;
 		//gdata2.grabExcessHorizontalSpace=true;
-		
 		
 		Button searchButton=new Button(composite, SWT.PUSH);
 		searchButton.setText("Search");
@@ -283,23 +358,52 @@ public class SurfClipseClientView extends ViewPart {
 		searchButton.setImage(get_search_image());
 		//System.out.println("Search Icon:"+Display.getDefault().getSystemImage(SWT.ICON_SEARCH));
 		searchButton.setLayoutData(gdata3);
+		
+		final Composite composite2 = new Composite(parent, SWT.NONE);
+		GridLayout gridLayout2 = new GridLayout(2, false);
+		gridLayout.marginWidth = 0;
+		gridLayout.marginHeight = 0;
+		gridLayout.verticalSpacing = 5;
+		gridLayout.horizontalSpacing =5;
+		composite2.setLayout(gridLayout2);
+
+		GridData gridData2 = new GridData(SWT.CENTER, SWT.FILL, true, false);
+		composite2.setLayoutData(gridData2);
+		
+		
+		
+		//Label blank=new Label(composite,SWT.NONE);
+		Label info=new Label(composite2, SWT.NONE);
+		info.setText("Enter your search keywords here. Press Ctrl+Space for suggestions ");
+		final Button confirm=new Button(composite2,SWT.CHECK);
+		confirm.setText("Associate context");
+		
+		
+		
 		//searchButton.setLayoutData(gridData);
 		searchButton.addSelectionListener(new SelectionListener() {
-			
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				// TODO Auto-generated method stub
-				String searchQuery=input.getText();
-				//making the search
-				SearchEventManager manager=new SearchEventManager();
-				manager.fire_keyword_search(searchQuery);
-			}
-			
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				// TODO Auto-generated method stub
-			}
-		});	
+					@Override
+					public void widgetSelected(SelectionEvent e) {
+						// TODO Auto-generated method stub
+						String searchQuery=input.getText();
+						boolean associate_context=false;
+						//making the search
+						SearchEventManager manager=new SearchEventManager();
+						if(confirm.getSelection())associate_context=true;
+						manager.fire_keyword_search(searchQuery,associate_context);
+						//clearing the suggestions
+						suggestions.clear();
+					}
+					
+					@Override
+					public void widgetDefaultSelected(SelectionEvent e) {
+						// TODO Auto-generated method stub
+					}
+				});
+		
+		
+		
+		
 	}
 	
 	protected void add_result_table(Composite parent)
@@ -307,13 +411,80 @@ public class SurfClipseClientView extends ViewPart {
 		//code for adding the table viewer
 		GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
 		
-		viewer = new TableViewer(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
+		viewer = new TableViewer(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.HIDE_SELECTION);
 		//viewer.setSorter(new MyTableSorter());
-		
 		final Table table=viewer.getTable();
 		table.setLayoutData(gridData);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
+		
+		
+		/*this.viewer.addSelectionChangedListener(new ISelectionChangedListener() {
+			final ToolTip tip=new ToolTip(table.getShell(), SWT.BALLOON);
+			@Override
+			public void selectionChanged(SelectionChangedEvent event) {
+				// TODO Auto-generated method stub
+				System.out.println("Single clicked");
+				IStructuredSelection selection=(IStructuredSelection) event.getSelection();
+				Result selectedResult=(Result)selection.getFirstElement();
+				if(selectedResult!=null){
+				tip.setText(selectedResult.title);
+				String description=selectedResult.description;
+				DecimalFormat df=new DecimalFormat("##.00");
+				String content=df.format(selectedResult.content_score*100);
+				String context=df.format(selectedResult.context_score*100);
+				String popularity=df.format(selectedResult.popularity_score*100);
+				description+="\nContent relevance: "+content+"%";
+				description+="\nContext relevance: "+context+"%";
+				description+="\nRelative Popularity: "+popularity+"%";
+				tip.setMessage(description+"\n\n"+selectedResult.resultURL);
+				tip.getDisplay().syncExec(new Runnable() {
+                    public void run() {
+                        tip.setVisible(true);
+                    }
+                });  
+				}
+			}
+		});*/
+		
+		//Tool tip for the table
+		final ToolTip tip=new ToolTip(table.getShell(), SWT.BALLOON);
+		//tip.setText("Result table");
+		//tip.setMessage("This is the result table");
+		tip.setAutoHide(true);
+		table.addListener(SWT.MouseHover, new Listener() {
+            public void handleEvent(Event event) {
+            	TableItem item=table.getItem(new Point(event.x, event.y));
+            	tip.setText(item.getText(0));
+            	String description="";
+				DecimalFormat df=new DecimalFormat("##.00");
+				String content=df.format(Double.parseDouble(item.getText(3)) *100);
+				String context=df.format(Double.parseDouble(item.getText(4))*100);
+				String popularity=df.format(Double.parseDouble(item.getText(5))*100);
+				description+="Content relevance: "+content+"%";
+				description+="\nContext relevance: "+context+"%";
+				description+="\nRelative Popularity: "+popularity+"%";
+				tip.setMessage(description+"\n\n"+item.getText(1));
+            	
+                tip.getDisplay().timerExec(50, new Runnable() {
+                    public void run() {
+                        tip.setVisible(true);
+                    }
+                });             
+            }
+        });
+		table.addListener(SWT.MouseExit, new Listener() {
+            public void handleEvent(Event event) {
+                tip.getDisplay().timerExec(50, new Runnable() {
+                    public void run() {
+                        tip.setVisible(false);
+                    }
+                });
+            }
+        });
+		
+		
+		
 		
 		String[] columnNames={"Title","URL","Score","Content Relevance","Context Relevance","Popularity"};
 		int[] colWidth={400,500,200,200,200,200};
@@ -346,6 +517,8 @@ public class SurfClipseClientView extends ViewPart {
 			public void doubleClick(DoubleClickEvent event) {
 				// TODO Auto-generated method stub
 				
+				System.out.println("Double clicked");
+				
 				IStructuredSelection selection=(IStructuredSelection)event.getSelection();
 				if(selection.isEmpty())return;
 				@SuppressWarnings("unchecked")
@@ -368,8 +541,8 @@ public class SurfClipseClientView extends ViewPart {
 					Browser mybrowser=my_browser_view.webbrowser;
 					mybrowser.setUrl(selected.resultURL);
 					//showing page title
-					Label pageLabel=my_browser_view.pageLabel;
-					pageLabel.setText(selected.title);
+					//Label pageLabel=my_browser_view.pageLabel;
+					//pageLabel.setText(selected.title);
 					//adding currently displayed url
 					add_currently_displayed_url(selected.resultURL);
 					
