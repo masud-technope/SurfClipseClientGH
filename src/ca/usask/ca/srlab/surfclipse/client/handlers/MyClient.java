@@ -10,10 +10,17 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
+import org.eclipse.ui.IViewPart;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.PlatformUI;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+
+import ca.usask.ca.srlab.surfclipse.client.views.SurfClipseBrowser;
+import ca.usask.ca.srlab.surfclipse.client.views.SurfClipseClientView;
 
 import utility.RegexMatcher;
 import utility.StackTraceUtils;
@@ -103,12 +110,36 @@ public class MyClient {
 		return searchQuery;
 	}
 	
+	
+	protected void show_time_interval(long interval)
+	{
+		try
+		{
+		String viewID="ca.usask.ca.srlab.surfclipse.client.views.SurfClipseClientView";
+		//PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(viewID);
+		IWorkbenchPage page =(IWorkbenchPage)PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+		System.out.println(page);
+		IViewPart vpart=page.findView(viewID);
+		SurfClipseClientView clientView=(SurfClipseClientView)vpart;
+		Label timerLabel=clientView.timerLabel;
+		timerLabel.setText(interval+"s required.");}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	
 	protected ArrayList<Result> collect_search_results()
 	{
 		//code for collecting search results
-		//String jsonResponse=perform_surfclipse_call();
-		String jsonResponse=collect_demo_results();
-		return convert_json_to_results(jsonResponse);
+		long startTime=System.currentTimeMillis();
+		String jsonResponse=perform_surfclipse_call();
+		//String jsonResponse=collect_demo_results();
+		ArrayList<Result> results=convert_json_to_results(jsonResponse);
+		long endTime=System.currentTimeMillis();
+		long time_interval=(endTime-startTime)/1000;
+		System.out.println("Time required for search:"+time_interval+" s");
+		//now showing the results to timer label
+		//show_time_interval(time_interval);
+		return results; //convert_json_to_results(jsonResponse);
 	}
 	
 	protected String collect_demo_results()
@@ -186,7 +217,7 @@ public class MyClient {
 			result.content_score=Double.parseDouble(jsonObj.get("contentscore").toString());
 			result.context_score=Double.parseDouble(jsonObj.get("contextscore").toString());
 			result.popularity_score=Double.parseDouble(jsonObj.get("popularityscore").toString());
-			//result.representativeText=jsonObj.get("desctext").toString();
+			result.search_result_confidence=Double.parseDouble(jsonObj.get("confidence").toString());
 			resultColl.add(result);
 			//System.out.println(jsonObj.get("rank")+" "+jsonObj.get("title")+" "+jsonObj.get("resultURL"));
 		}

@@ -37,13 +37,10 @@ public class SurfClipseBrowser extends ViewPart {
 	Button nextButton;
 	Label pageLabel;
 	
-	
-	
 	public SurfClipseBrowser()
 	{
 		//browser constructor
 	}
-
 	
 	protected void create_navigator_buttons(Composite parent)
 	{

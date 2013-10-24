@@ -1,15 +1,17 @@
 package core;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 
 //code for Search Results
 
-public class Result {
+public class Result implements Serializable {
 	//attributes of a result entry
 	public String title;
 	public String description;
 	public String resultURL;
+	
 	
 	//rank
 	public long alexaRank=-1;
@@ -39,6 +41,9 @@ public class Result {
 	public double content_score=0;
 	public double context_score=0;
 	public double popularity_score=0;
+	
+	//search confidence
+	public double search_result_confidence=0;
 	
 	
 	//total scores: different version

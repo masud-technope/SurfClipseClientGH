@@ -34,13 +34,17 @@ import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.browser.Browser;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FillLayout;
@@ -92,6 +96,8 @@ public class SurfClipseClientView extends ViewPart {
 	Display display=null;
 	Shell shell=null;
 	ArrayList<String> suggestions=new ArrayList<>();
+	public Label timerLabel;
+	
 
 	/*
 	 * The content provider class is responsible for
@@ -116,31 +122,7 @@ public class SurfClipseClientView extends ViewPart {
 		}
 	}
 
-	
-	
-	
-	class ToolTipProvider extends ColumnLabelProvider 
-	{
 
-		@Override
-		public void update(ViewerCell cell) {
-			// TODO Auto-generated method stub
-			
-		}
-		@Override
-		public String getToolTipText(Object element)
-		{
-			Result result=(Result)element;
-			return result.description;
-		}
-		@Override
-		public String getText(Object element)
-		{
-			Result result=(Result)element;
-			return result.title;
-		}
-	}
-	
 	
 	class ViewLabelProvider extends LabelProvider implements ITableLabelProvider {
 		public String getColumnText(Object obj, int index) {
@@ -166,6 +148,9 @@ public class SurfClipseClientView extends ViewPart {
 			case 5:
 				double popularity=myresult.popularity_score;
 				return popularity+"";
+			case 6:
+				double confidence=myresult.search_result_confidence;
+				return confidence+"";
 			default:
 				return "";
 			}
@@ -223,28 +208,33 @@ public class SurfClipseClientView extends ViewPart {
 		
 		
 		public int compare(Viewer viewer, Object e1, Object e2) {
-		    int rc = 0;
-		    Result result1 = (Result) e1;
-		    Result result2 = (Result) e2;
-		    switch (column) {
-		    case 2:
-		      rc =compare(result1.totalScore_content_context_popularity, result2.totalScore_content_context_popularity);
-		      break;
-		    case 3:
-		      rc=compare(result1.content_score, result2.content_score);
-		      break;
-		    case 4:
-		     rc=compare(result1.context_score, result2.context_score);
-		     break;
-		    case 5:
-			 rc=compare(result1.popularity_score, result2.popularity_score);
-			 break;		  
-		    }
-		    
-		    if (direction == DESCENDING)
-		      rc = -rc;
-		    return rc;
-		  }
+			int rc = 0;
+			Result result1 = (Result) e1;
+			Result result2 = (Result) e2;
+			switch (column) {
+			case 2:
+				rc = compare(result1.totalScore_content_context_popularity,
+						result2.totalScore_content_context_popularity);
+				break;
+			case 3:
+				rc = compare(result1.content_score, result2.content_score);
+				break;
+			case 4:
+				rc = compare(result1.context_score, result2.context_score);
+				break;
+			case 5:
+				rc = compare(result1.popularity_score, result2.popularity_score);
+				break;
+			case 6:
+				rc = compare(result1.search_result_confidence,
+						result2.search_result_confidence);
+				break;
+			}
+
+			if (direction == DESCENDING)
+				rc = -rc;
+			return rc;
+		}
 	}
 	
 	protected Image get_search_image()
@@ -257,7 +247,7 @@ public class SurfClipseClientView extends ViewPart {
 	{
 		// code for showing related exception message
 		final Composite composite = new Composite(parent, SWT.NONE);
-		GridLayout gridLayout = new GridLayout(3, false);
+		GridLayout gridLayout = new GridLayout(4, false);
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 10;
 		gridLayout.verticalSpacing = 5;
@@ -283,6 +273,7 @@ public class SurfClipseClientView extends ViewPart {
 		keywordlabel.setFont(new Font(composite.getDisplay(), "Arial",11, SWT.BOLD));
 		
 		
+		
 		final Text input = new Text(composite, SWT.SINGLE | SWT.BORDER );
 		input.setEditable(true);
 		input.setToolTipText("Enter your search keywords. Press Ctrl+Space for suggestions");
@@ -296,13 +287,13 @@ public class SurfClipseClientView extends ViewPart {
 			public void focusLost(FocusEvent e) {
 				// TODO Auto-generated method stub
 				//do nothing
-				System.out.println("Focus lost");
+				//System.out.println("Focus lost");
 			}
 			
 			@Override
 			public void focusGained(FocusEvent e) {
 				// TODO Auto-generated method stub
-				System.out.println("Focus gained");
+				//System.out.println("Focus gained");
 				if(suggestions.size()==0)
 				{
 					try
@@ -359,6 +350,23 @@ public class SurfClipseClientView extends ViewPart {
 		//System.out.println("Search Icon:"+Display.getDefault().getSystemImage(SWT.ICON_SEARCH));
 		searchButton.setLayoutData(gdata3);
 		
+		/*timerLabel=new Label(composite, SWT.NONE);
+		timerLabel.setFont(new Font(composite.getDisplay(), "Arial",11, SWT.BOLD));
+		final Color myColor = new Color(composite.getDisplay(), 00, 102, 255);
+		timerLabel.setForeground(myColor);
+		timerLabel.addDisposeListener(new DisposeListener() {
+            public void widgetDisposed(DisposeEvent e)
+            {
+                myColor.dispose();
+            }
+        });
+		timerLabel.setText("Time:");*/
+		
+		final Label progressLabel=new Label(composite.getShell(), SWT.BORDER);
+		//Image image=ImageDescriptor.createFromFile(SurfClipseClientView.class, "progress.gif").createImage();
+		//progressLabel.setImage(image);
+		
+		
 		final Composite composite2 = new Composite(parent, SWT.NONE);
 		GridLayout gridLayout2 = new GridLayout(2, false);
 		gridLayout.marginWidth = 0;
@@ -384,6 +392,14 @@ public class SurfClipseClientView extends ViewPart {
 		searchButton.addSelectionListener(new SelectionListener() {
 					@Override
 					public void widgetSelected(SelectionEvent e) {
+						//showing progress
+						//Image image=ImageDescriptor.createFromFile(SurfClipseClientView.class, "progress.gif").createImage();
+						ImageData imageData=new ImageData(getClass().getResourceAsStream("progress.gif"));
+						Image image=new Image(composite.getDisplay(), imageData);
+						System.out.println(image);
+						progressLabel.setImage(image);
+						progressLabel.pack();
+						
 						// TODO Auto-generated method stub
 						String searchQuery=input.getText();
 						boolean associate_context=false;
@@ -391,8 +407,11 @@ public class SurfClipseClientView extends ViewPart {
 						SearchEventManager manager=new SearchEventManager();
 						if(confirm.getSelection())associate_context=true;
 						manager.fire_keyword_search(searchQuery,associate_context);
+						//showing progress bar
+						
 						//clearing the suggestions
 						suggestions.clear();
+						
 					}
 					
 					@Override
@@ -454,6 +473,8 @@ public class SurfClipseClientView extends ViewPart {
 		tip.setAutoHide(true);
 		table.addListener(SWT.MouseHover, new Listener() {
             public void handleEvent(Event event) {
+            	try
+            	{
             	TableItem item=table.getItem(new Point(event.x, event.y));
             	tip.setText(item.getText(0));
             	String description="";
@@ -461,16 +482,18 @@ public class SurfClipseClientView extends ViewPart {
 				String content=df.format(Double.parseDouble(item.getText(3)) *100);
 				String context=df.format(Double.parseDouble(item.getText(4))*100);
 				String popularity=df.format(Double.parseDouble(item.getText(5))*100);
+				String confidence=df.format(Double.parseDouble(item.getText(6))*100);
 				description+="Content relevance: "+content+"%";
 				description+="\nContext relevance: "+context+"%";
-				description+="\nRelative Popularity: "+popularity+"%";
+				description+="\nRelative popularity: "+popularity+"%";
+				description+="\nResult confidence: "+confidence+"%";
 				tip.setMessage(description+"\n\n"+item.getText(1));
             	
                 tip.getDisplay().timerExec(50, new Runnable() {
                     public void run() {
                         tip.setVisible(true);
                     }
-                });             
+                }); }catch(Exception exc){}            
             }
         });
 		table.addListener(SWT.MouseExit, new Listener() {
@@ -485,10 +508,9 @@ public class SurfClipseClientView extends ViewPart {
 		
 		
 		
-		
-		String[] columnNames={"Title","URL","Score","Content Relevance","Context Relevance","Popularity"};
-		int[] colWidth={400,500,200,200,200,200};
-		int[] colAlignment={SWT.LEFT,SWT.LEFT, SWT.LEFT,SWT.LEFT,SWT.LEFT,SWT.LEFT};
+		String[] columnNames={"Title","URL","Score","Content Relevance","Context Relevance","Popularity","Confidence"};
+		int[] colWidth={400,500,200,200,200,200, 200};
+		int[] colAlignment={SWT.LEFT,SWT.LEFT, SWT.LEFT,SWT.LEFT,SWT.LEFT,SWT.LEFT, SWT.LEFT};
 		for ( int i = 0; i < columnNames.length; i++) {
 			
 			//stored for sorting
