@@ -3,12 +3,8 @@ package ca.usask.ca.srlab.surfclipse.client.views;
 
 import history.HistoryLink;
 import history.RecencyScoreManager;
-
-
-
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -34,20 +30,15 @@ import org.eclipse.jface.fieldassist.TextContentAdapter;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.browser.Browser;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.ui.*;
@@ -327,7 +318,8 @@ public class SurfClipseClientView extends ViewPart {
 			}
 		};
 		
-		input.addFocusListener(flistener);
+		if(!input.isListening(SWT.FOCUSED)){
+		input.addFocusListener(flistener);}
 		
 		
 		//final Button confirm; //=new Button(composite,SWT.CHECK);
@@ -368,7 +360,7 @@ public class SurfClipseClientView extends ViewPart {
 		
 		
 		final Composite composite2 = new Composite(parent, SWT.NONE);
-		GridLayout gridLayout2 = new GridLayout(2, false);
+		GridLayout gridLayout2 = new GridLayout(3, false);
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 0;
 		gridLayout.verticalSpacing = 5;
@@ -385,7 +377,25 @@ public class SurfClipseClientView extends ViewPart {
 		info.setText("Enter your search keywords here. Press Ctrl+Space for suggestions ");
 		final Button confirm=new Button(composite2,SWT.CHECK);
 		confirm.setText("Associate context");
-		
+		final Button clearButton=new Button(composite2,SWT.CHECK);
+		clearButton.setText("Reset search");
+
+		//adding listener to clear button
+		clearButton.addSelectionListener(new SelectionListener() {
+			
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				// TODO Auto-generated method stub
+				viewer.setInput(null);
+				suggestions.clear();
+			}
+			
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
 		
 		
 		//searchButton.setLayoutData(gridData);
