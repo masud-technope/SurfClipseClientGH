@@ -68,8 +68,10 @@ public class SCQueryMaker {
 	    for(int i=0;i<traceLimit;i++)
 	    {
 	    	StackTraceElem elem=elems.get(i);
-	    	tokenhset.add(elem.className);
-	    	tokenhset.add(elem.methodName);
+	    	if(i<elems.size()-1){
+	    		tokenhset.add(elem.className);
+	    		tokenhset.add(elem.methodName);
+	    	}
 	    }
 	    return tokenhset;
 	}
@@ -114,9 +116,12 @@ public class SCQueryMaker {
 	public class CustomComparator_counter implements Comparator<Entry<String,Integer>> {
 	    @Override
 	    public int compare(Entry<String, Integer> e1, Entry<String,Integer> e2) {
-	    	if(e1.getValue()>e2.getValue())return -1;
-	    	else if(e1.getValue()<e2.getValue())return 1;
-	    	else return 0;
+	    	Integer value1=e1.getValue();
+	    	Integer value2=e2.getValue();
+	    	return value2.compareTo(value1);
+	    	//if(e1.getValue()>e2.getValue())return -1;
+	    	//else if(e1.getValue()<e2.getValue())return 1;
+	    	//else return 0;
 	    }
 	}
 	

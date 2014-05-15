@@ -24,6 +24,7 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolTip;
 import org.eclipse.ui.part.*;
 import org.eclipse.jface.bindings.keys.KeyStroke;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.fieldassist.ContentProposalAdapter;
 import org.eclipse.jface.fieldassist.SimpleContentProposalProvider;
 import org.eclipse.jface.fieldassist.TextContentAdapter;
@@ -32,12 +33,13 @@ import org.eclipse.jface.viewers.*;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -84,11 +86,14 @@ public class SurfClipseClientView extends ViewPart {
 	//private Action action2;
 	//private Action doubleClickAction;
 	//array containing Tab URL
+	
 	Display display=null;
 	Shell shell=null;
-	ArrayList<String> suggestions=new ArrayList<>();
+	static ArrayList<String> suggestions=new ArrayList<>();
 	public Label timerLabel;
-	
+	public Text input=null;
+	ContentProposalAdapter adapter = null;
+	static FocusListener flistener=null;
 
 	/*
 	 * The content provider class is responsible for
@@ -147,7 +152,6 @@ public class SurfClipseClientView extends ViewPart {
 			}
 		}
 		public Image getColumnImage(Object obj, int index) {
-			
 			
 			if(index>0)return null;
 			return getImage(obj);
@@ -233,6 +237,18 @@ public class SurfClipseClientView extends ViewPart {
 		return ImageDescriptor.createFromFile(ViewLabelProvider.class, "searchbt16.gif").createImage();
 	}
 	
+	protected ArrayList<String> formattingKeywordQuery(ArrayList<String> rawSuggestions)
+	{
+		//code for formatting keyword query
+		ArrayList<String> temp=new ArrayList<>();
+		String query=new String();
+		for(String item:rawSuggestions){
+			query+=item.trim()+" ";
+			temp.add(query);
+		}
+		return temp;
+	}
+
 	
 	protected void add_related_exception_message(Composite parent,HashMap<String,ArrayList<Integer>> pointers)
 	{
@@ -265,14 +281,14 @@ public class SurfClipseClientView extends ViewPart {
 		
 		
 		
-		final Text input = new Text(composite, SWT.SINGLE | SWT.BORDER );
+		input = new Text(composite, SWT.SINGLE | SWT.BORDER );
 		input.setEditable(true);
-		input.setToolTipText("Enter your search keywords. Press Ctrl+Space for suggestions");
+		input.setToolTipText("Enter your search keywords (e.g., java.lang.ClassNotFoundException JDBC Driver)");
 		Font myfont = new Font(composite.getDisplay(), "Arial", 11, SWT.NORMAL);
 		input.setFont(myfont);
 		input.setLayoutData(gdata2);
 		
-	    FocusListener flistener=new FocusListener() {
+	    flistener=new FocusListener() {
 			
 			@Override
 			public void focusLost(FocusEvent e) {
@@ -285,7 +301,7 @@ public class SurfClipseClientView extends ViewPart {
 			public void focusGained(FocusEvent e) {
 				// TODO Auto-generated method stub
 				//System.out.println("Focus gained");
-				if(suggestions.size()==0)
+				if(suggestions.size()==0) //suggestions.size()==0
 				{
 					try
 					{
@@ -293,39 +309,50 @@ public class SurfClipseClientView extends ViewPart {
 					String strace=manager.extract_stacktrace_from_console();
 					String ccontext=manager.extract_source_code_context(strace);
 					SCQueryMaker maker=new SCQueryMaker("", strace, ccontext);
-					suggestions=maker.getSearchQuerySuggestions();
-					
+					ArrayList<String> rawSuggestions=maker.getSearchQuerySuggestions();
+					suggestions=formattingKeywordQuery(rawSuggestions);
+					//current exception name
+					String currentExceptionName=suggestions.get(0);
 					//now assign the auto completion feature
 					try {
 						//collecting context information
 						String[] proposals = suggestions.toArray(new String[suggestions.size()]);
 						if(proposals.length>0){
-						ContentProposalAdapter adapter = null;
+						//ContentProposalAdapter adapter = null;
 						SimpleContentProposalProvider scp = new SimpleContentProposalProvider(
 								proposals);
-						String keyPress = "Ctrl+Space";
-						KeyStroke ks = KeyStroke.getInstance(keyPress);
+						
+						//setting filtering
+						scp.setFiltering(true);
+						
+						//String keyPress = "Ctrl+Space";
+						//KeyStroke ks = KeyStroke.getInstance(keyPress);
+						//extracting the input
+						//Text input=(Text)e.getSource();
+						String autoactive="abcdefghijklmnopqrstuvwxyz0123456789";
 						adapter = new ContentProposalAdapter(input,
-								new TextContentAdapter(), scp, ks, null);
-						adapter.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_INSERT);
-						}
+								new TextContentAdapter(), scp, null, autoactive.toCharArray()); //keystroke is ignored
+						adapter.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
+
+						//setting exception name
+						//input.setText(currentExceptionName);
+						} 
 					} catch (Exception exc) {
 						exc.printStackTrace();
 					}
 					}catch(Exception exc){}
-					
 				}
 			}
+			
+			
 		};
-		
 		if(!input.isListening(SWT.FOCUSED)){
-		input.addFocusListener(flistener);}
-		
+		input.addFocusListener(flistener);
+		}
 		
 		//final Button confirm; //=new Button(composite,SWT.CHECK);
 		//confirm.setText("Associate context");
 		//confirm.setLayoutData(gdata2);
-		
 		//Label blank=new Label(composite,SWT.NONE);
 		
 		GridData gdata3=new GridData();
@@ -354,7 +381,7 @@ public class SurfClipseClientView extends ViewPart {
         });
 		timerLabel.setText("Time:");*/
 		
-		final Label progressLabel=new Label(composite.getShell(), SWT.BORDER);
+		//final Label progressLabel=new Label(composite.getShell(), SWT.BORDER);
 		//Image image=ImageDescriptor.createFromFile(SurfClipseClientView.class, "progress.gif").createImage();
 		//progressLabel.setImage(image);
 		
@@ -370,11 +397,9 @@ public class SurfClipseClientView extends ViewPart {
 		GridData gridData2 = new GridData(SWT.CENTER, SWT.FILL, true, false);
 		composite2.setLayoutData(gridData2);
 		
-		
-		
 		//Label blank=new Label(composite,SWT.NONE);
 		Label info=new Label(composite2, SWT.NONE);
-		info.setText("Enter your search keywords here. Press Ctrl+Space for suggestions ");
+		info.setText("Enter your search keywords (e.g., java.lang.ClassNotFoundException JDBC Driver)");
 		final Button confirm=new Button(composite2,SWT.CHECK);
 		confirm.setText("Associate context");
 		final Button clearButton=new Button(composite2,SWT.CHECK);
@@ -386,14 +411,13 @@ public class SurfClipseClientView extends ViewPart {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				// TODO Auto-generated method stub
-				viewer.setInput(null);
 				suggestions.clear();
+				input.setText("");
+				viewer.setContentProvider(new ViewContentProvider());
 			}
-			
 			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				// TODO Auto-generated method stub
-				
 			}
 		});
 		
@@ -404,14 +428,15 @@ public class SurfClipseClientView extends ViewPart {
 					public void widgetSelected(SelectionEvent e) {
 						//showing progress
 						//Image image=ImageDescriptor.createFromFile(SurfClipseClientView.class, "progress.gif").createImage();
-						ImageData imageData=new ImageData(getClass().getResourceAsStream("progress.gif"));
-						Image image=new Image(composite.getDisplay(), imageData);
-						System.out.println(image);
-						progressLabel.setImage(image);
-						progressLabel.pack();
+						//ImageData imageData=new ImageData(getClass().getResourceAsStream("progress.gif"));
+						//Image image=new Image(composite.getDisplay(), imageData);
+						//System.out.println(image);
+						//progressLabel.setImage(image);
+						//progressLabel.pack();
 						
 						// TODO Auto-generated method stub
 						String searchQuery=input.getText();
+						if(!searchQuery.isEmpty()){
 						boolean associate_context=false;
 						//making the search
 						SearchEventManager manager=new SearchEventManager();
@@ -422,6 +447,13 @@ public class SurfClipseClientView extends ViewPart {
 						//clearing the suggestions
 						suggestions.clear();
 						
+						//removes the listener
+						//adapter=null;
+						//input.removeFocusListener(flistener);
+						}else{
+							showMessageBox("Please enter your query for search");
+						}
+						
 					}
 					
 					@Override
@@ -430,10 +462,48 @@ public class SurfClipseClientView extends ViewPart {
 					}
 				});
 		
-		
-		
+		// adding key listener to input
+		input.addKeyListener(new KeyAdapter() {
+			public void keyPressed(KeyEvent event) {
+				switch (event.keyCode) {
+				case SWT.CR:
+					try {
+						//System.out.println("Search initiated..");
+						// initiating the search
+						// TODO Auto-generated method stub
+						String searchQuery = input.getText();
+						if(!searchQuery.isEmpty()){
+						//boolean associate_context = false;
+						// making the search
+						/*SearchEventManager manager = new SearchEventManager();
+						if (confirm.getSelection())
+							associate_context = true;
+						manager.fire_keyword_search(searchQuery,
+								associate_context);
+						*/// showing progress bar
+						// clearing the suggestions
+						//suggestions.clear();
+						}else{
+							//showMessageBox("Please enter your query for search");
+						}
+					} catch (Exception exc) {
+					}
+					break;
+				case SWT.DEL:
+					// clearing the search input box
+					input.setText("");
+					break;
+				case SWT.ESC:
+					//canceling the search input
+					//input.setText("");
+					break;
+				}
+			}
+		});
 		
 	}
+	
+	
 	
 	protected void add_result_table(Composite parent)
 	{
@@ -446,7 +516,6 @@ public class SurfClipseClientView extends ViewPart {
 		table.setLayoutData(gridData);
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
-		
 		
 		/*this.viewer.addSelectionChangedListener(new ISelectionChangedListener() {
 			final ToolTip tip=new ToolTip(table.getShell(), SWT.BALLOON);
@@ -515,8 +584,6 @@ public class SurfClipseClientView extends ViewPart {
                 });
             }
         });
-		
-		
 		
 		String[] columnNames={"Title","URL","Score","Content Relevance","Context Relevance","Popularity","Confidence"};
 		int[] colWidth={400,500,200,200,200,200, 200};
@@ -611,10 +678,8 @@ public class SurfClipseClientView extends ViewPart {
 		{
 		RecencyScoreManager recenyScoreManager=Activator.recenyScoreManager;
 		ArrayList<HistoryLink> RecentFiles=RecencyScoreManager.RecentFiles;
-		
 		//removing the existing entries in top 20
 		//update with new visiting time
-		
 		ArrayList<HistoryLink> tempList=new ArrayList<>();
 		tempList.addAll(RecencyScoreManager.RecentFiles);
 				
@@ -641,6 +706,16 @@ public class SurfClipseClientView extends ViewPart {
 		{
 			exc.printStackTrace();
 		}
+	}
+	
+	protected void showMessageBox(String message)
+	{
+		//code for showing message box
+		try
+		{
+		Shell shell=Display.getDefault().getShells()[0];
+		MessageDialog.openInformation(shell, "Information", message);
+		}catch(Exception exc){}
 	}
 	
 	

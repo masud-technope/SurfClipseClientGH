@@ -9,6 +9,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import ca.usask.ca.srlab.surfclipse.client.handlers.BookmarkManager;
 import ca.usask.ca.srlab.surfclipse.client.handlers.ConsoleListenerManager;
 
 /**
@@ -46,6 +47,9 @@ public class Activator extends AbstractUIPlugin {
 		{
 		new Thread(new ActiveConsoleChecker()).start();
 		}
+		
+		//creating bookmark file
+		BookmarkManager.createBookMarkFile();
 		
 	}
 

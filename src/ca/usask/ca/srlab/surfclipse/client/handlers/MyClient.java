@@ -102,12 +102,17 @@ public class MyClient {
 	
 	protected String refine_search_query(String searchQuery, String stackTrace)
 	{
+		//code for refining the search query
+		String modifiedSearchQuery=searchQuery;
+		try{
 		StackTraceUtils utils=new StackTraceUtils(stackTrace);
 		String exceptionName=utils.extract_exception_name();
 		//add the exception name to the query if it does not exist
 		if(!searchQuery.contains(exceptionName))
-			searchQuery=exceptionName+" "+searchQuery;
-		return searchQuery;
+			modifiedSearchQuery=exceptionName+" "+searchQuery;
+		}catch(Exception exc){
+		}
+		return modifiedSearchQuery;
 	}
 	
 	
@@ -232,7 +237,7 @@ public class MyClient {
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		String searchQuery="org.eclipse.core.runtime.InvalidRegistryObjectException: Invalid registry object";
+		String searchQuery="java.net.ConnectException Connection refused  connect currentThread ";
 		String stacktTrace="";
 		String codecontext="";
 		//MyClient myclient=new MyClient(searchQuery,stacktTrace,codecontext);

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -17,12 +16,14 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
@@ -264,12 +265,13 @@ public class SearchEventManager {
 	{
 		//code for extracting stack from console
 		String extractedContent=new String();
-		String stackPattern="^.+Exception[^\\n]+\\n(\\t+\\Qat \\E.+\\s+)+$";
+		String stackPattern="^.+Exception(:)?[^\\n]+\\n(\\t+\\Qat \\E.+\\s+)+$";
 		Pattern p=Pattern.compile(stackPattern);
 		//console content
 		ConsolePlugin plugin = ConsolePlugin.getDefault();
 		IConsoleManager conMan = plugin.getConsoleManager();
 		IConsole consoles[] = conMan.getConsoles();
+		System.out.println("No of consoles:"+consoles.length);
 		// get the default console opened
 		TextConsole myConsole = (TextConsole) consoles[0];
 		// storing the stack trace information.
@@ -437,7 +439,20 @@ public class SearchEventManager {
 		}catch(Exception exc){
 			//System.err.println(exc.getMessage());
 			//System.err.println("Failed to update Eclipse view"+exc.getMessage());
-			exc.printStackTrace();	
+			exc.printStackTrace();
+			String message="Failed to collect search results. Please try again.";
+			showMessageBox(message);
+			
 		}
+	}
+	
+	protected void showMessageBox(String message)
+	{
+		//code for showing message box
+		try
+		{
+		Shell shell=Display.getDefault().getShells()[0];
+		MessageDialog.openInformation(shell, "Information", message);
+		}catch(Exception exc){}
 	}
 }

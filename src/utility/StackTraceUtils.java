@@ -3,7 +3,6 @@ package utility;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import core.StackTrace;
 import core.StackTraceElem;
 
@@ -34,23 +33,21 @@ public class StackTraceUtils {
 	
 	protected String format_the_stacktrace(String strace)
 	{
-		//code for formatting the stack trace
-		String newcontent=new String();
-		String[] lines=strace.split("\n");
-		if(lines.length>1) return strace;
-		else
-		{
-			lines=strace.split("\\s+at");
-			newcontent=lines[0].trim()+"\n";
-			for(int i=1;i<lines.length;i++)
-			{
-				newcontent+= "at "+lines[i]+"\n";
-			}
+		// code for formatting the stack trace
+		String newcontent = new String();
+		try{
+		// String[] lines=strace.split("\n");
+		// if(lines.length>1) return strace;
+		String[] lines = strace.split("\\s*at\\s+");
+		newcontent = lines[0].trim().replace("\n", "") + "\n";
+		for (int i = 1; i < lines.length; i++) {
+			lines[i]=lines[i].replace("\n", "");
+			newcontent += "at " + lines[i] + "\n";
+		}}catch(Exception exc){
+			newcontent=strace;
 		}
 		return newcontent.trim();
 	}
-	
-	
 	
 	public String get_error_message()
 	{
@@ -94,7 +91,7 @@ public class StackTraceUtils {
 		String error_only_message = new String();
 		String temp = get_error_message();
 		try {
-			String exceptionNameRegex = "^.+Exception";
+			String exceptionNameRegex = "^.+Exception(:)?";
 			Pattern pattern = Pattern.compile(exceptionNameRegex);
 			Matcher matcher = pattern.matcher(temp);
 			if (matcher.find()) {
@@ -115,7 +112,7 @@ public class StackTraceUtils {
 		String exceptionName=new String();
 		try
 		{
-			String exceptionNameRegex="^.+Exception";
+			String exceptionNameRegex="^.+Exception(:)?";
 			Pattern pattern=Pattern.compile(exceptionNameRegex);
 			Matcher matcher=pattern.matcher(errorMessage);
 			if(matcher.find())
@@ -135,45 +132,57 @@ public class StackTraceUtils {
 	
 	protected StackTraceElem analyze_stack_trace_line(String line)
 	{
-		//code for analyzing the stack trace line
-		line=line.trim();
-		line=line.substring(2).trim(); //line without at
-		int leftBraceIndex=line.indexOf("(");
-		System.out.println(line);
-		String canonical_method=line.substring(0,leftBraceIndex).trim();
-		String[] parts=canonical_method.split("\\.");
+		// code for analyzing the stack trace line
+		StackTraceElem elem = new StackTraceElem();
+		String traceLineTokens = new String();
+		try {
+			line = line.trim();
+			if(!line.isEmpty()){
+			line = line.substring(2).trim(); // line without at
+			int leftBraceIndex = line.indexOf("(");
+			//System.out.println(line);
+			String canonical_method = line.substring(0, leftBraceIndex).trim();
+			String[] parts = canonical_method.split("\\.");
 
-		StackTraceElem elem=new StackTraceElem();
-		String traceLineTokens=new String();
-		//package, class and method
-		if(parts.length>2)
-		{
-			int last=parts.length-1;
-			elem.methodName=parts[last];
-			elem.className=parts[last-1];
-			String pack_name=new String();
-			for(int i=0;i<last-1;i++)pack_name+="."+parts[i];
-			pack_name=pack_name.substring(1);
-			//System.out.println(pack_name);
-			elem.packageName=pack_name;
-			traceLineTokens=elem.packageName+" "+elem.className+" "+elem.methodName;
-		}else
-		{
-			elem.methodName=parts[1];
-			elem.className=parts[0];
-			traceLineTokens=elem.className+" "+elem.methodName;
+			// package, class and method
+			if (parts.length > 2) {
+				int last = parts.length - 1;
+				elem.methodName = parts[last];
+				elem.className = parts[last - 1];
+				String pack_name = new String();
+				for (int i = 0; i < last - 1; i++)
+					pack_name += "." + parts[i];
+				pack_name = pack_name.substring(1);
+				// System.out.println(pack_name);
+				elem.packageName = pack_name;
+				traceLineTokens = elem.packageName + " " + elem.className + " "
+						+ elem.methodName;
+			} else if (parts.length==2) {
+				elem.methodName = parts[1];
+				elem.className = parts[0];
+				traceLineTokens = elem.className + " " + elem.methodName;
+			}else{
+				//do nothing.
+			}
+			// Method call line number
+			try {
+				int rightBraceLoc = line.lastIndexOf(")");
+				String braced_part = line.substring(leftBraceIndex + 1,
+						rightBraceLoc);
+				String[] parts2 = {};
+				parts2 = braced_part.split(":");
+				if (parts2.length == 2) {
+					elem.methodCallLineNumber = Integer.parseInt(parts2[1]);
+					// traceLineTokens+=" "+elem.methodCallLineNumber;
+				}
+			} catch (Exception exc) {
+			}
+
+			elem.traceLineTokens = traceLineTokens;
+			}
+		} catch (Exception exc) {
 		}
-		//Method call line number
-		String braced_part=line.substring(leftBraceIndex+1,line.length()-1);
-		String[] parts2={};
-		parts2=braced_part.split(":");
-		if(parts2.length==2)
-		{
-			elem.methodCallLineNumber=Integer.parseInt(parts2[1]);
-			//traceLineTokens+=" "+elem.methodCallLineNumber;
-		}
-		elem.traceLineTokens=traceLineTokens;
-		//returning the element
+		// returning the element
 		return elem;
 	}
 	
@@ -182,6 +191,7 @@ public class StackTraceUtils {
 		//code for getting trace element for all lines
 		String[] lines=this.stacktrace.split("\n");
 		ArrayList<StackTraceElem> elems=new ArrayList<>();
+		try{
 		for(int i=1;i<lines.length;i++)
 		{
 			String line=lines[i].trim();
@@ -189,7 +199,7 @@ public class StackTraceUtils {
 			StackTraceElem elem=analyze_stack_trace_line(lines[i]);
 			elems.add(elem);
 			}
-		}
+		}}catch(Exception exc){}
 		return elems;
 	}
 	
@@ -197,8 +207,13 @@ public class StackTraceUtils {
 	{
 		//code for analyzing stack trace		
 		StackTrace trace=new StackTrace();
+		try{
 		if(!RegexMatcher.matches_stacktrace(this.stacktrace))
 			return trace;
+		
+		//formatting the stack trace
+		this.stacktrace=format_the_stacktrace(this.stacktrace);
+		
 		trace.primaryContent=this.stacktrace;
 		trace.error_message=this.get_error_without_exception_name();
 		trace.exception_name=this.extract_exception_name();
@@ -217,39 +232,22 @@ public class StackTraceUtils {
 		}else
 		{
 			trace.stackTraceTokens=tokens+" "+trace_tokens;
-		}
+		}}catch(Exception exc){}
 		//returning trace
 		return trace;
 	}
 	
-	/*protected static String load_stack_trace()
-	{
-		String stack_trace=new String();
-		
-		File f=new File(StaticData.Base_Directory+"/exception/5.txt");
-		try {
-			Scanner scanner=new Scanner(f);
-			while(scanner.hasNext())
-			{
-				stack_trace+=scanner.nextLine().trim()+"\n";
-			}
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return stack_trace;
-	}*/
-	
-	
+
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		//String error="Primefaces exception INFO: java.lang.ArithmeticException: / by zero java.lang.ArithmeticException: / by zero";
 		//String exceptionName=extract_exception_name(error);
 		//if(!exceptionName.isEmpty())System.out.println(" "+exceptionName);
-		String stackTrace="";//load_stack_trace();
+		String stackTrace="java.io.FileNotFoundException:  (The system cannot find the path specified)";//load_stack_trace();
 		StackTraceUtils utils=new StackTraceUtils(stackTrace);
-		StackTrace trace=utils.analyze_stack_trace();
-		System.out.println(trace.stackTraceTokens);
+		//StackTrace trace=utils.analyze_stack_trace();
+		//System.out.println(trace.stackTraceTokens);
+		System.out.println(utils.extract_exception_name());
 		
 	}
 

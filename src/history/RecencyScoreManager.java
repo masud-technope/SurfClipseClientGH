@@ -305,17 +305,26 @@ public class RecencyScoreManager {
 		//code for collecting recent history links
 		try
 		{
-			ArrayList<HistoryLink> temp1=get_Firefox_history_files();
-			ArrayList<HistoryLink> temp2=get_Chrome_history_files();			
-			
-			if(temp1.size()>0)
-			RecentFiles.addAll(temp1);
-			else if(temp2.size()>0)
-			RecentFiles.addAll(temp2);
-			//filtering elements
-			RecentFiles=filter_history_links(RecentFiles);
-			//sorting recent files
-			Collections.sort(RecentFiles, new CustomComparator_last_visit_time());
+			ArrayList<HistoryLink> temp1 = new ArrayList<>();
+			try {
+				temp1 = get_Firefox_history_files();
+			} catch (Exception exc) {
+			}
+			ArrayList<HistoryLink> temp2 = new ArrayList<>();
+			try {
+				temp2 = get_Chrome_history_files();
+			} catch (Exception exc) {
+
+			}
+			if (temp1.size() > 0)
+				RecentFiles.addAll(temp1);
+			else if (temp2.size() > 0)
+				RecentFiles.addAll(temp2);
+			// filtering elements
+			RecentFiles = filter_history_links(RecentFiles);
+			// sorting recent files
+			Collections.sort(RecentFiles,
+					new CustomComparator_last_visit_time());
 		}catch(Exception exc){
 			exc.printStackTrace();
 		}

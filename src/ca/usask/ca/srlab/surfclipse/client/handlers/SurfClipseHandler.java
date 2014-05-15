@@ -1,26 +1,5 @@
 package ca.usask.ca.srlab.surfclipse.client.handlers;
-import java.util.ArrayList;
-
 import org.eclipse.core.commands.*;
-import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.IStructuredContentProvider;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.TreeSelection;
-import org.eclipse.jface.viewers.Viewer;
-import org.eclipse.ui.IViewPart;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.console.ConsolePlugin;
-import org.eclipse.ui.console.IConsole;
-import org.eclipse.ui.console.IConsoleManager;
-import org.eclipse.ui.console.TextConsole;
-import org.eclipse.jface.text.*;
-import org.eclipse.ui.texteditor.ITextEditor;
-import org.eclipse.ui.views.framelist.UpAction;
-import org.eclipse.ui.internal.views.log.LogEntry;
-
-import ca.usask.ca.srlab.surfclipse.client.views.SurfClipseClientView;
-import core.*;
 
 
 public class SurfClipseHandler extends AbstractHandler{

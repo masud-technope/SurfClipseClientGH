@@ -6,7 +6,6 @@ import org.eclipse.ui.console.IConsoleManager;
 import org.eclipse.ui.console.IPatternMatchListener;
 import org.eclipse.ui.console.PatternMatchEvent;
 import org.eclipse.ui.console.TextConsole;
-
 import ca.usask.ca.srlab.surfclipse.client.handlers.SearchEventManager;
 
 public class ActiveConsoleChecker implements Runnable {

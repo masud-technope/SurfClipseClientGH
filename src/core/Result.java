@@ -53,6 +53,8 @@ public class Result implements Serializable {
 	public double totalScore_content_context_popularity=0;
 	
 	
+	
+	
 	//result content
 	public String resultContent=new String();
 	public ArrayList<String> codeStacksContent=new ArrayList<String>();

@@ -7,8 +7,8 @@ import java.util.regex.Pattern;
 public class RegexMatcher {
 
 	
-	static String stacktrace_regex="(^\\d+\\) .+)|(^.+Exception: .+)|(^\\s+at .+)|(^\\s+... \\d+ more)|(^\\s*Caused by:.+)"; 
-	static String exception_name_regex="^.+Exception";
+	static String stacktrace_regex="(^\\d+\\) .+)|(^.+Exception(:)? .+)|(^\\s+at .+)|(^\\s+... \\d+ more)|(^\\s*Caused by:.+)"; 
+	static String exception_name_regex="^.+Exception(:)?";
 	
 	public static boolean matches_stacktrace(String raw_stack_trace_content)
 	{
