@@ -222,6 +222,7 @@ public class MyClient {
 			result.content_score=Double.parseDouble(jsonObj.get("contentscore").toString());
 			result.context_score=Double.parseDouble(jsonObj.get("contextscore").toString());
 			result.popularity_score=Double.parseDouble(jsonObj.get("popularityscore").toString());
+			//result.search_result_confidence=0;//Double.parseDouble(jsonObj.get("confidence").toString());
 			result.search_result_confidence=Double.parseDouble(jsonObj.get("confidence").toString());
 			resultColl.add(result);
 			//System.out.println(jsonObj.get("rank")+" "+jsonObj.get("title")+" "+jsonObj.get("resultURL"));
@@ -237,7 +238,7 @@ public class MyClient {
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		String searchQuery="java.net.ConnectException Connection refused  connect currentThread ";
+		String searchQuery="org.eclipse.core.runtime.InvalidRegistryObjectException: Invalid registry object";
 		String stacktTrace="";
 		String codecontext="";
 		//MyClient myclient=new MyClient(searchQuery,stacktTrace,codecontext);
