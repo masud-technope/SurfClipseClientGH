@@ -2,7 +2,6 @@ package ca.usask.ca.srlab.surfclipse.client.views;
 
 import history.HistoryLink;
 import history.RecencyScoreManager;
-
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,11 +49,11 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.ui.*;
 import org.eclipse.swt.SWT;
-
 import querysuggest.SCQueryMaker;
 import ca.usask.ca.srlab.surfclipse.client.Activator;
 import ca.usask.ca.srlab.surfclipse.client.ActiveConsoleChecker;
 import ca.usask.ca.srlab.surfclipse.client.handlers.SearchEventManager;
+import core.QueryRecommender;
 import core.Result;
 
 /**
@@ -93,8 +92,8 @@ public class SurfClipseClientView extends ViewPart {
 	ContentProposalAdapter adapter = null;
 	static FocusListener flistener = null;
 	final int TEXT_MARGIN = 3;
-	final int MIN = 60;
-
+	final int MIN_HEIGHT=60;
+	
 	final Display currDisplay = Display.getCurrent();
 	final TextLayout textLayout = new TextLayout(currDisplay);
 	Font font1 = new Font(currDisplay, "Arial", 12, SWT.BOLD);
@@ -118,11 +117,9 @@ public class SurfClipseClientView extends ViewPart {
 	class ViewContentProvider implements IStructuredContentProvider {
 
 		public void inputChanged(Viewer v, Object oldInput, Object newInput) {
-
 		}
 
 		public void dispose() {
-
 		}
 
 		public Object[] getElements(Object parent) {
@@ -138,31 +135,16 @@ public class SurfClipseClientView extends ViewPart {
 			switch (index) {
 			case 0:
 				if (myresult.title != null)
-					return myresult.title + "\n" + myresult.resultURL + "\n"
-							+ myresult.description;
+					return myresult.title.trim()+"\n"+myresult.description.trim()+"\n"+myresult.resultURL;
 				return "";
-				/*
-				 * case 1: if(myresult.resultURL!=null)return
-				 * myresult.resultURL; return "";
-				 */
 			case 1:
-				if (myresult.totalScore_content_context_popularity >= 0)
-					return String
-							.format("%.2f",
-									myresult.totalScore_content_context_popularity * 100);
-				return "";
+					return String.format("%.2f", myresult.totalScore_content_context_popularity * 100);
 			case 2:
-				double content_relevance = myresult.content_score;
-				return String.format("%.2f", content_relevance * 100);
+				return String.format("%.2f", myresult.content_score*100);
 			case 3:
-				double context_relevance = myresult.context_score;
-				return String.format("%.2f", context_relevance * 100);
+				return String.format("%.2f", myresult.context_score*100);
 			case 4:
-				double popularity = myresult.popularity_score;
-				return String.format("%.2f", popularity * 100);
-			case 5:
-				double confidence = myresult.search_result_confidence;
-				return String.format("%.2f", confidence * 100);
+				return String.format("%.2f", myresult.search_result_confidence*100);
 			default:
 				return "";
 			}
@@ -269,11 +251,16 @@ public class SurfClipseClientView extends ViewPart {
 		return temp;
 	}
 
+	protected Image getRefreshImage() {
+		return ImageDescriptor.createFromFile(SurfClipseClientView.class,
+				"refresh.png").createImage();
+	}
+
 	protected void add_related_exception_message(Composite parent,
 			HashMap<String, ArrayList<Integer>> pointers) {
 		// code for showing related exception message
 		final Composite composite = new Composite(parent, SWT.NONE);
-		GridLayout gridLayout = new GridLayout(4, false);
+		GridLayout gridLayout = new GridLayout(5, false);
 		gridLayout.marginWidth = 0;
 		gridLayout.marginHeight = 10;
 		gridLayout.verticalSpacing = 5;
@@ -302,85 +289,82 @@ public class SurfClipseClientView extends ViewPart {
 
 		input = new Text(composite, SWT.SINGLE | SWT.BORDER);
 		input.setEditable(true);
-		input.setToolTipText("Enter your search keywords (e.g., java.lang.ClassNotFoundException JDBC Driver)");
+		input.setToolTipText("Enter your search keywords (e.g., ClassNotFoundException JDBC Driver)");
 		Font myfont = new Font(composite.getDisplay(), "Arial", 11, SWT.NORMAL);
 		input.setFont(myfont);
 		input.setLayoutData(gdata2);
 
 		flistener = new FocusListener() {
-
 			@Override
 			public void focusLost(FocusEvent e) {
 				// TODO Auto-generated method stub
-				// do nothing
-				// System.out.println("Focus lost");
 			}
 
 			@Override
 			public void focusGained(FocusEvent e) {
 				// TODO Auto-generated method stub
-				// System.out.println("Focus gained");
-				if (suggestions.size() == 0) // suggestions.size()==0
-				{
-					try {
-						SearchEventManager manager = new SearchEventManager();
-						String strace = manager
-								.extract_stacktrace_from_console();
-						String ccontext = manager
-								.extract_source_code_context(strace);
-						SCQueryMaker maker = new SCQueryMaker("", strace,
-								ccontext);
-						ArrayList<String> rawSuggestions = maker
-								.getSearchQuerySuggestions();
-						suggestions = formattingKeywordQuery(rawSuggestions);
-						// current exception name
-						String currentExceptionName = suggestions.get(0);
-						// now assign the auto completion feature
-						try {
-							// collecting context information
-							String[] proposals = suggestions
-									.toArray(new String[suggestions.size()]);
-							if (proposals.length > 0) {
-								// ContentProposalAdapter adapter = null;
-								SimpleContentProposalProvider scp = new SimpleContentProposalProvider(
-										proposals);
+				// now assign the auto completion feature
+				try {
+					// collecting context information
+					String[] proposals = suggestions
+							.toArray(new String[suggestions.size()]);
+					if (proposals.length > 0) {
+						// ContentProposalAdapter adapter = null;
+						SimpleContentProposalProvider scp = new SimpleContentProposalProvider(
+								proposals);
+						// setting filtering
+						scp.setFiltering(true);
+						String autoactive = "abcdefghijklmnopqrstuvwxyz0123456789";
+						adapter = new ContentProposalAdapter(input,
+								new TextContentAdapter(), scp, null,
+								autoactive.toCharArray()); // keystroke is
+															// ignored
+						adapter.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
 
-								// setting filtering
-								scp.setFiltering(true);
-
-								// String keyPress = "Ctrl+Space";
-								// KeyStroke ks =
-								// KeyStroke.getInstance(keyPress);
-								// extracting the input
-								// Text input=(Text)e.getSource();
-								String autoactive = "abcdefghijklmnopqrstuvwxyz0123456789";
-								adapter = new ContentProposalAdapter(input,
-										new TextContentAdapter(), scp, null,
-										autoactive.toCharArray()); // keystroke
-																	// is
-																	// ignored
-								adapter.setProposalAcceptanceStyle(ContentProposalAdapter.PROPOSAL_REPLACE);
-
-								// setting exception name
-								// input.setText(currentExceptionName);
-							}
-						} catch (Exception exc) {
-							exc.printStackTrace();
-						}
-					} catch (Exception exc) {
+						// setting exception name
+						//input.setText(currentExceptionName);
 					}
+				} catch (Exception exc) {
+					exc.printStackTrace();
 				}
 			}
-
 		};
+
 		if (!input.isListening(SWT.FOCUSED)) {
 			input.addFocusListener(flistener);
 		}
 
-		// final Button confirm; //=new Button(composite,SWT.CHECK);
-		// confirm.setText("Associate context");
-		// confirm.setLayoutData(gdata2);
-		// Label blank=new Label(composite,SWT.NONE);
+		GridData gdata4 = new GridData();
+		gdata4.heightHint = 30;
+		gdata4.widthHint = 120;
+		gdata4.horizontalAlignment = SWT.BEGINNING;
+		Button queryButton = new Button(composite, SWT.PUSH);
+		queryButton.setText("Get Queries");
+		queryButton
+				.setToolTipText("Get Query Suggestions for Current Exception");
+		queryButton.setImage(getRefreshImage());
+		queryButton.setFont(new Font(composite.getDisplay(), "Arial", 10,
+				SWT.BOLD));
+		queryButton.setLayoutData(gdata4);
+		queryButton.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				// TODO Auto-generated method stub
+				// collecting queries
+				QueryRecommender recommender = new QueryRecommender();
+				suggestions=recommender.recommendQueries();
+				String exceptionName=suggestions.get(0).split("\\s+")[0];
+				//System.out.println(suggestions);
+				//setting the exception name
+				input.setText(exceptionName);
+			}
+
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				// TODO Auto-generated method stub
+				// default handler
+			}
+		});
 
 		GridData gdata3 = new GridData();
 		gdata3.heightHint = 30;
@@ -396,23 +380,7 @@ public class SurfClipseClientView extends ViewPart {
 		searchButton.setImage(get_search_image());
 		// System.out.println("Search Icon:"+Display.getDefault().getSystemImage(SWT.ICON_SEARCH));
 		searchButton.setLayoutData(gdata3);
-
-		/*
-		 * timerLabel=new Label(composite, SWT.NONE); timerLabel.setFont(new
-		 * Font(composite.getDisplay(), "Arial",11, SWT.BOLD)); final Color
-		 * myColor = new Color(composite.getDisplay(), 00, 102, 255);
-		 * timerLabel.setForeground(myColor); timerLabel.addDisposeListener(new
-		 * DisposeListener() { public void widgetDisposed(DisposeEvent e) {
-		 * myColor.dispose(); } }); timerLabel.setText("Time:");
-		 */
-
-		// final Label progressLabel=new Label(composite.getShell(),
-		// SWT.BORDER);
-		// Image
-		// image=ImageDescriptor.createFromFile(SurfClipseClientView.class,
-		// "progress.gif").createImage();
-		// progressLabel.setImage(image);
-
+		
 		final Composite composite2 = new Composite(parent, SWT.NONE);
 		GridLayout gridLayout2 = new GridLayout(3, false);
 		gridLayout.marginWidth = 0;
@@ -426,7 +394,7 @@ public class SurfClipseClientView extends ViewPart {
 
 		// Label blank=new Label(composite,SWT.NONE);
 		Label info = new Label(composite2, SWT.NONE);
-		info.setText("Enter your search keywords (e.g., java.lang.ClassNotFoundException JDBC Driver)");
+		info.setText("Enter your search keywords (e.g., ClassNotFoundException JDBC Driver)");
 		final Button confirm = new Button(composite2, SWT.CHECK);
 		confirm.setText("Associate context");
 		final Button clearButton = new Button(composite2, SWT.CHECK);
@@ -442,7 +410,6 @@ public class SurfClipseClientView extends ViewPart {
 				input.setText("");
 				viewer.setContentProvider(new ViewContentProvider());
 			}
-
 			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
 				// TODO Auto-generated method stub
@@ -453,16 +420,6 @@ public class SurfClipseClientView extends ViewPart {
 		searchButton.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				// showing progress
-				// Image
-				// image=ImageDescriptor.createFromFile(SurfClipseClientView.class,
-				// "progress.gif").createImage();
-				// ImageData imageData=new
-				// ImageData(getClass().getResourceAsStream("progress.gif"));
-				// Image image=new Image(composite.getDisplay(), imageData);
-				// System.out.println(image);
-				// progressLabel.setImage(image);
-				// progressLabel.pack();
 
 				// TODO Auto-generated method stub
 				String searchQuery = input.getText();
@@ -474,13 +431,8 @@ public class SurfClipseClientView extends ViewPart {
 						associate_context = true;
 					manager.fire_keyword_search(searchQuery, associate_context);
 					// showing progress bar
-
 					// clearing the suggestions
-					suggestions.clear();
-
-					// removes the listener
-					// adapter=null;
-					// input.removeFocusListener(flistener);
+					//suggestions.clear();
 				} else {
 					showMessageBox("Please enter your query for search");
 				}
@@ -532,7 +484,6 @@ public class SurfClipseClientView extends ViewPart {
 				}
 			}
 		});
-
 	}
 
 	protected void add_result_table(Composite parent) {
@@ -547,37 +498,55 @@ public class SurfClipseClientView extends ViewPart {
 		table.setHeaderVisible(true);
 		table.setLinesVisible(true);
 
-		/*
-		 * //Tool tip for the table final ToolTip tip=new
-		 * ToolTip(table.getShell(), SWT.BALLOON);
-		 * //tip.setText("Result table");
-		 * //tip.setMessage("This is the result table"); tip.setAutoHide(true);
-		 * table.addListener(SWT.MouseHover, new Listener() { public void
-		 * handleEvent(Event event) { try { TableItem item=table.getItem(new
-		 * Point(event.x, event.y)); tip.setText(item.getText(0)); String
-		 * description=""; DecimalFormat df=new DecimalFormat("##.00"); String
-		 * content=df.format(Double.parseDouble(item.getText(3)) *100); String
-		 * context=df.format(Double.parseDouble(item.getText(4))*100); String
-		 * popularity=df.format(Double.parseDouble(item.getText(5))*100); String
-		 * confidence=df.format(Double.parseDouble(item.getText(6))*100);
-		 * description+="Content relevance: "+content+"%";
-		 * description+="\nContext relevance: "+context+"%";
-		 * description+="\nRelative popularity: "+popularity+"%";
-		 * description+="\nResult confidence: "+confidence+"%";
-		 * tip.setMessage(description+"\n\n"+item.getText(1));
-		 * 
-		 * tip.getDisplay().timerExec(50, new Runnable() { public void run() {
-		 * tip.setVisible(true); } }); }catch(Exception exc){} } });
-		 * table.addListener(SWT.MouseExit, new Listener() { public void
-		 * handleEvent(Event event) { tip.getDisplay().timerExec(50, new
-		 * Runnable() { public void run() { tip.setVisible(false); } }); } });
-		 */
+		// Tool tip for the table
+		//final ToolTip tip = new ToolTip(table.getShell(), SWT.BALLOON);
+		// tip.setText("Result table");
+		// tip.setMessage("This is the result table");
+		//tip.setAutoHide(true);
+		/*table.addListener(SWT.MouseHover, new Listener() {
+			public void handleEvent(Event event) {
+				try {
+					TableItem item = table.getItem(new Point(event.x, event.y));
+					tip.setText(item.getText(0));
+					String description = "";
+					DecimalFormat df = new DecimalFormat("##.00");
+					String content = df.format(Double.parseDouble(item
+							.getText(2)) * 100);
+					String context = df.format(Double.parseDouble(item
+							.getText(3)) * 100);
+					String popularity = df.format(Double.parseDouble(item
+							.getText(4)) * 100);
+					String confidence = df.format(Double.parseDouble(item
+							.getText(5)) * 100);
+					description += "Content relevance: " + content + "%";
+					description += "\nContext relevance: " + context + "%";
+					description += "\nRelative popularity: " + popularity + "%";
+					description += "\nResult confidence: " + confidence + "%";
+					tip.setMessage(description + "\n\n" + item.getText(1));
 
+					tip.getDisplay().timerExec(50, new Runnable() {
+						public void run() {
+							tip.setVisible(true);
+						}
+					});
+				} catch (Exception exc) {
+				}
+			}
+		});
+		table.addListener(SWT.MouseExit, new Listener() {
+			public void handleEvent(Event event) {
+				tip.getDisplay().timerExec(50, new Runnable() {
+					public void run() {
+						tip.setVisible(false);
+					}
+				});
+			}
+		}); */
 		String[] columnNames = { "Search Result", "Score", "Content Relevance",
-				"Context Relevance", "Popularity", "Confidence" };
-		int[] colWidth = { 700, 100, 100, 100, 100, 100 };
+				"Context Relevance", "Confidence" };
+		int[] colWidth = { 700, 100, 120, 120, 120 };
 		int[] colAlignment = { SWT.LEFT, SWT.LEFT, SWT.LEFT, SWT.LEFT,
-				SWT.LEFT, SWT.LEFT };
+				SWT.LEFT, SWT.LEFT};
 		for (int i = 0; i < columnNames.length; i++) {
 			// stored for sorting
 			final int columnNum = i;
@@ -594,7 +563,6 @@ public class SurfClipseClientView extends ViewPart {
 			});
 			// col.setImage(getDefaultImage());
 		}
-
 		viewer.setContentProvider(new ViewContentProvider());
 		viewer.setLabelProvider(new ViewLabelProvider());
 		viewer.setSorter(new MyTableSorter());
@@ -625,7 +593,6 @@ public class SurfClipseClientView extends ViewPart {
 					String viewID = "ca.usask.ca.srlab.surfclipse.client.views.SurfClipseBrowser";
 					PlatformUI.getWorkbench().getActiveWorkbenchWindow()
 							.getActivePage().showView(viewID);
-
 					IWorkbenchPage page = (IWorkbenchPage) PlatformUI
 							.getWorkbench().getActiveWorkbenchWindow()
 							.getActivePage();
@@ -645,15 +612,16 @@ public class SurfClipseClientView extends ViewPart {
 				}
 			}
 		});
-
-		// resizing table item height
-		setItemHeight(table, MIN);
+		
+		//formatting the table
+		setItemHeight(table);
 		setPaintItem(table);
-
 	}
 
-	public void setItemHeight(Table table, final int min) {
+	protected void setItemHeight(Table table)
+	{
 		table.addListener(SWT.MeasureItem, new Listener() {
+
 			@Override
 			public void handleEvent(Event event) {
 				// TODO Auto-generated method stub
@@ -661,7 +629,8 @@ public class SurfClipseClientView extends ViewPart {
 				String text = item.getText(event.index);
 				Point size = event.gc.textExtent(text);
 				event.width = size.x + 2 * TEXT_MARGIN;
-				event.height = Math.max(min, size.y + TEXT_MARGIN);
+				int min = MIN_HEIGHT;
+				event.height =MIN_HEIGHT;// Math.max(min, size.y + TEXT_MARGIN);
 			}
 		});
 		table.addListener(SWT.EraseItem, new Listener() {
@@ -673,7 +642,7 @@ public class SurfClipseClientView extends ViewPart {
 			}
 		});
 	}
-
+	
 	protected void setPaintItem(Table table) {
 		table.addListener(SWT.PaintItem, new Listener() {
 			@Override
@@ -682,49 +651,33 @@ public class SurfClipseClientView extends ViewPart {
 				if (event.index == 0) {
 					TableItem item = (TableItem) event.item;
 					// item.setForeground(Display.getCurrent().getSystemColor(SWT.COLOR_DARK_BLUE));
-					String text = item.getText(event.index);
-					/* center column 1 vertically */
-					int yOffset = 0;
-					if (event.index == 1) {
-						Point size = event.gc.textExtent(text);
-						yOffset = Math.max(0, (event.height - size.y) / 2);
-					}
-					// event.gc.drawText(text, event.x + TEXT_MARGIN, event.y
-					// + yOffset, true);
-
 					// redraw text layout
-					String resultText = item.getText(0);
+					String resultText = item.getText(0).trim();
 					int firstNL = resultText.indexOf('\n');
 					int lastNL = resultText.lastIndexOf('\n');
 					textLayout.setText(resultText);
 					textLayout.setStyle(style1, 0, firstNL - 1);
 					textLayout.setStyle(style2, firstNL + 1, lastNL - 1);
 					textLayout.setStyle(style3, lastNL, resultText.length());
-					
 					textLayout.draw(event.gc, event.x, event.y);
-					
-				} else if (event.index>0) {
+				}
+				else if (event.index > 0) {
 					GC gc = event.gc;
 					int index = event.index;
+					
 					TableItem item = (TableItem) event.item;
-					int percent = (int)Double.parseDouble(item.getText(index));
+					int percent = (int) Double.parseDouble(item.getText(index));
 					Color foreground = gc.getForeground();
 					Color background = gc.getBackground();
-					// gc.setForeground(new Color(null, 11, 59, 23));
-					Color myforeground=new Color(null, 11, 97, 11);
-					if(index==2){
-						myforeground=new Color(null, 0,64,255);
+					gc.setForeground(new Color(null, 11, 59, 23));
+					Color myforeground =null; 
+					if(index==1){
+						myforeground=new Color(null, 11, 97, 11);
 					}
-					if(index==3){
-						myforeground=new Color(null, 223,64,255);
-					}
-					if(index==4){
-						myforeground=new Color(null, 17,122,141);
-					}
-					if(index==5){
-						myforeground=new Color(null, 180,180,54);
-					}
-					
+					 if(index==2){ myforeground=new Color(null, 0,64,255); }
+					 if(index==3){ myforeground=new Color(null, 17,122,141); }
+					 if(index==4){ myforeground=new Color(null,171,104,104); }
+					 
 					gc.setForeground(myforeground);
 					gc.setBackground(new Color(null, 255, 255, 255));
 					int col2Width = 100;
@@ -744,12 +697,11 @@ public class SurfClipseClientView extends ViewPart {
 					gc.drawText(text, event.x + 2, event.y + 15 + offset, true);
 					gc.setForeground(background);
 					gc.setBackground(foreground);
-				}
+				}			
 			}
 		});
-
 	}
-
+	
 	public void createPartControl(final Composite parent) {
 
 		GridLayout glayout = new GridLayout();
@@ -810,11 +762,7 @@ public class SurfClipseClientView extends ViewPart {
 		} catch (Exception exc) {
 		}
 	}
-
-	/**
-	 * The constructor.
-	 */
-
+	
 	public SurfClipseClientView() {
 	}
 
@@ -825,6 +773,5 @@ public class SurfClipseClientView extends ViewPart {
 		viewer.getControl().setFocus();
 		// setup_console_listener();
 		// System.out.println("I am focused..");
-
 	}
 }

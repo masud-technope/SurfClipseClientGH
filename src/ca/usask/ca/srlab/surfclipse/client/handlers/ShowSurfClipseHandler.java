@@ -20,6 +20,9 @@ public class ShowSurfClipseHandler extends AbstractHandler{
 			String SCBviewID="ca.usask.ca.srlab.surfclipse.client.views.SurfClipseBrowser";
 			PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(SCBviewID);
 			
+			String STviewID="ca.usask.ca.srlab.surfclipse.client.views.StackTraceView";
+			PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(STviewID);
+			
 			System.out.println("Surfclipse windows shown successfully");
 			
 		} catch (Exception exc) {

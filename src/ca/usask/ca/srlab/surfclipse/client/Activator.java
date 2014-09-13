@@ -39,8 +39,8 @@ public class Activator extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
-		recenyScoreManager=new RecencyScoreManager();
-		recenyScoreManager.calculate_recency_score();
+		//recenyScoreManager=new RecencyScoreManager();
+		//recenyScoreManager.calculate_recency_score();
 		//Display.getDefault().asyncExec(new ActiveConsoleChecker());
 		new SurfClipseModeManager().check_current_mode_settings();
 		if(SurfClipseModeManager.current_mode==1)
@@ -60,7 +60,7 @@ public class Activator extends AbstractUIPlugin {
 	public void stop(BundleContext context) throws Exception {
 		plugin = null;
 		super.stop(context);
-		recenyScoreManager.save_recent_files();
+		//recenyScoreManager.save_recent_files();
 		new SurfClipseModeManager().save_current_mode_settings();
 	}
 	

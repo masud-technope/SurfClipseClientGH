@@ -4,14 +4,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
@@ -31,8 +36,8 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.internal.views.log.LogEntry;
 import org.eclipse.ui.texteditor.ITextEditor;
 
+import core.QueryRecommender;
 import core.Result;
-
 import ca.usask.ca.srlab.surfclipse.client.views.SurfClipseClientView;
 
 public class SearchEventManager {
@@ -100,57 +105,29 @@ public class SearchEventManager {
 	public void fire_search_operation2() {
 		try {
 			// code for firing search operation
+			this.stacktrace=extract_stacktrace_from_console();
+			this.sourcecode_context=extract_source_code_context(this.stacktrace);
 			if (mode_of_invocation == 1) {  //pro active mode
-				
-				if (continue_search) {
-					this.stacktrace = currmatchedContent;
-					try {
-						this.searchQuery = extract_error_message_from_stack(this.stacktrace);
-						if (this.stacktrace == null)
-							this.stacktrace = "";
-					} catch (Exception exc) {
-						this.stacktrace = "";
-					}
-					try {
-						this.sourcecode_context = extract_source_code_context(this.stacktrace);
-						if (this.sourcecode_context == null)
-							this.sourcecode_context = "";
-					} catch (Exception exc) {
-						this.sourcecode_context = "";
-					}
+				if (continue_search) {					
+					//collect search query
+					QueryRecommender qrecommender=new QueryRecommender();
+					ArrayList<String> queries=qrecommender.recommendQueries();
+					this.searchQuery=queries.get(0);
 				}else return;
 			} else if(mode_of_invocation==0) {   //interactive mode
-
 				String selected_text = new String();
 				selected_text = get_selected_message_from_IDE();
-				if(selected_text.isEmpty() || selected_text==null)return;
+				if(selected_text.isEmpty() || selected_text==null){
+					QueryRecommender qrecommender=new QueryRecommender();
+					ArrayList<String> queries=qrecommender.recommendQueries();
+					this.searchQuery=queries.get(0);
+				}
 				else this.searchQuery=selected_text;
+				
 				if (typeofSelection == 0) { //from console
-					try {
-						this.stacktrace = this.extract_stacktrace_from_console();
-						if (this.stacktrace == null)
-							this.stacktrace = "";
-					} catch (Exception exc) {
-						this.stacktrace = "";
-					}
-					try {
-						this.sourcecode_context = this.extract_source_code_context(this.stacktrace);
-						if (this.sourcecode_context == null)
-							this.sourcecode_context = "";
-					} catch (Exception exc) {
-						this.sourcecode_context = "";
-					}
+					//collecting result for console
 				} else if (typeofSelection == 1) { //from Error log
-					// selected text extracted
-					// stack trace extracted
-					// source code context not extracted
-					try {
-						this.sourcecode_context = this.extract_source_code_context(this.stacktrace);
-						if (this.sourcecode_context == null)
-							this.sourcecode_context = "";
-					} catch (Exception exc) {
-						this.sourcecode_context = "";
-					}
+					//collecting result for error log.
 				}
 			}
 			
@@ -177,7 +154,6 @@ public class SearchEventManager {
 								final String viewID = "ca.usask.ca.srlab.surfclipse.client.views.SurfClipseClientView";
 								PlatformUI.getWorkbench().getActiveWorkbenchWindow()
 										.getActivePage().showView(viewID);
-								
 								update_surfclipse_view();
 								}catch(Exception exc){
 									exc.printStackTrace();
@@ -221,7 +197,6 @@ public class SearchEventManager {
 		// performing the query
 		try {
 			if (!this.searchQuery.isEmpty()) {
-
 				new Thread() {
 					public void run() {
 						collectedResults = collect_search_results();
@@ -290,17 +265,24 @@ public class SearchEventManager {
 		String[] stackElements = extractedStack.split("\n");
 		// current source code line
 		String firstTraceLine = new String();
-		for (String elem : stackElements) {
+		/*for (String elem : stackElements) {
 			if (elem.contains(".java:")) {
 				firstTraceLine = elem;
+				System.out.println("Trace of interest:"+elem);
+				break;
+			}
+		}*/
+		for(int i=stackElements.length-1;i>0;i--){
+			String elem=stackElements[i];
+			if(elem.contains(".java")){
+				firstTraceLine=elem;
 				System.out.println("Trace of interest:"+elem);
 				break;
 			}
 		}
 		int open_brac = firstTraceLine.lastIndexOf('(');
 		int close_brac = firstTraceLine.lastIndexOf(')');
-		String fileNameLine = firstTraceLine.substring(open_brac + 1,
-				close_brac);
+		String fileNameLine = firstTraceLine.substring(open_brac + 1,close_brac);
 		String parts[] = fileNameLine.split(":");
 		String javaFileName = parts[0].trim();
 		int lineNumber = Integer.parseInt(parts[1].trim());
@@ -363,8 +345,7 @@ public class SearchEventManager {
 			IWorkbenchPage page = PlatformUI.getWorkbench()
 					.getActiveWorkbenchWindow().getActivePage();
 			ITextEditor editor = (ITextEditor) page.getActiveEditor();
-			IDocument doc = editor.getDocumentProvider().getDocument(
-					editor.getEditorInput());
+			IDocument doc = editor.getDocumentProvider().getDocument(editor.getEditorInput());
 			String fileContent = doc.get();
 			String[] lines = fileContent.split("\n");
 			int start_line = lineNumber > block_depth ? lineNumber
@@ -430,6 +411,7 @@ public class SearchEventManager {
 			//System.out.println(myview.viewer.toString());
 			ViewContentProvider viewContentProvider=new ViewContentProvider(collectedResults);
 			myview.viewer.setContentProvider(viewContentProvider);
+			myview.input.setText(this.searchQuery);
 			//myview.viewer.setSorter(new TableColumnSorter());
 			//myview.viewer.setInput(this.getvi);
 		}catch(Exception exc){
@@ -437,18 +419,16 @@ public class SearchEventManager {
 			//System.err.println("Failed to update Eclipse view"+exc.getMessage());
 			exc.printStackTrace();
 			String message="Failed to collect search results. Please try again.";
-			showMessageBox(message);
-			
+			showMessageBox(message);	
 		}
 	}
 	
-	protected void showMessageBox(String message)
-	{
-		//code for showing message box
-		try
-		{
-		Shell shell=Display.getDefault().getShells()[0];
-		MessageDialog.openInformation(shell, "Information", message);
-		}catch(Exception exc){}
+	protected void showMessageBox(String message) {
+		// code for showing message box
+		try {
+			Shell shell = Display.getDefault().getShells()[0];
+			MessageDialog.openInformation(shell, "Information", message);
+		} catch (Exception exc) {
+		}
 	}
 }

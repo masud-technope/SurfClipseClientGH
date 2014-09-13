@@ -55,9 +55,6 @@ public class SurfClipseBrowser extends ViewPart {
 	{
 		//browser constructor
 	}
-	
-	
-	
 	protected void create_navigator_buttons(Composite parent)
 	{
 		// code for creating buttons
@@ -98,8 +95,6 @@ public class SurfClipseBrowser extends ViewPart {
 				
 			}
 		});
-		
-		
 		nextButton = new Button(composite, SWT.PUSH);
 		nextButton.setImage(PlatformUI.getWorkbench().getSharedImages()
 				.getImage(org.eclipse.ui.ISharedImages.IMG_TOOL_FORWARD));
@@ -393,12 +388,7 @@ public class SurfClipseBrowser extends ViewPart {
             }
         });
         //pageLabel.setText("This is the page title");
-        
 	}
-	
-	
-	
-	
 	@Override
 	public void createPartControl(Composite parent) {
 		// TODO Auto-generated method stub
@@ -431,7 +421,6 @@ public class SurfClipseBrowser extends ViewPart {
 		MessageDialog.openInformation(shell, "Information", message);
 		}catch(Exception exc){}
 	}
-	
 	
 	public void show_the_result_link(String title, String url)
 	{

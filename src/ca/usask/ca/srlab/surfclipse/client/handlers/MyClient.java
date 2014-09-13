@@ -22,6 +22,7 @@ import org.json.simple.parser.JSONParser;
 import ca.usask.ca.srlab.surfclipse.client.views.SurfClipseBrowser;
 import ca.usask.ca.srlab.surfclipse.client.views.SurfClipseClientView;
 
+import utility.PageDescMgr;
 import utility.RegexMatcher;
 import utility.StackTraceUtils;
 
@@ -34,8 +35,8 @@ public class MyClient {
 	 */
 	
 	//String web_service_url="http://wssurfclipse.appspot.com/surfclipse_app?";
-	//String web_service_url="http://localhost:8080/wssurfclipse/surfclipse_app?";
-	String web_service_url="http://srlabg53-2.usask.ca/wssurfclipse/surfclipse_app?";
+	String web_service_url="http://localhost:8080/wssurfclipse/surfclipse_app?";
+	//String web_service_url="http://srlabg53-2.usask.ca/wssurfclipse/surfclipse_app?";
 	String searchQuery;
 	String stacktrace;
 	String codecontext;
@@ -52,7 +53,7 @@ public class MyClient {
 		this.searchQuery = searchQuery;
 		this.stacktrace = stackTrace;
 		this.codecontext = codeContext;
-		this.recentpagedata = get_recency_scores();
+		//this.recentpagedata = get_recency_scores();
 		
 		//refine the search query before sending for search
 		this.searchQuery=refine_search_query(this.searchQuery, this.stacktrace);
@@ -67,8 +68,8 @@ public class MyClient {
 					+ URLEncoder.encode(this.stacktrace, charset);
 			params += "&codecontext="
 					+ URLEncoder.encode(this.codecontext, charset);
-			params += "&recentpagedata="
-					+ URLEncoder.encode(this.recentpagedata, charset);
+			//params += "&recentpagedata="
+			//		+ URLEncoder.encode(this.recentpagedata, charset);
 		} catch (Exception exc) {
 		}
 		
@@ -212,6 +213,7 @@ public class MyClient {
 			try
 			{
 			result.description=jsonObj.get("description").toString();
+			result.description=PageDescMgr.normalizePageDescriptions(result.description);
 			}catch (Exception e) {
 				// TODO: handle exception
 				result.description=" ";
@@ -221,8 +223,7 @@ public class MyClient {
 			result.totalScore_content_context_popularity=Double.parseDouble(jsonObj.get("totalscore").toString());
 			result.content_score=Double.parseDouble(jsonObj.get("contentscore").toString());
 			result.context_score=Double.parseDouble(jsonObj.get("contextscore").toString());
-			result.popularity_score=Double.parseDouble(jsonObj.get("popularityscore").toString());
-			//result.search_result_confidence=0;//Double.parseDouble(jsonObj.get("confidence").toString());
+			//result.popularity_score=Double.parseDouble(jsonObj.get("popularityscore").toString());
 			result.search_result_confidence=Double.parseDouble(jsonObj.get("confidence").toString());
 			resultColl.add(result);
 			//System.out.println(jsonObj.get("rank")+" "+jsonObj.get("title")+" "+jsonObj.get("resultURL"));
@@ -236,9 +237,12 @@ public class MyClient {
 	}
 	
 	
+	
+	
+	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		String searchQuery="org.eclipse.core.runtime.InvalidRegistryObjectException: Invalid registry object";
+		String searchQuery="java.net.ConnectException Connection refused  connect currentThread ";
 		String stacktTrace="";
 		String codecontext="";
 		//MyClient myclient=new MyClient(searchQuery,stacktTrace,codecontext);
